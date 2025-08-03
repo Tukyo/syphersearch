@@ -1,0 +1,84 @@
+/* #region Background */
+#background {
+    position: fixed; /* Ensure the background stays in place */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 110%;
+    z-index: -1000;
+    background-color: var(--secondary-color);
+    background-size:auto;
+    background-position: center;
+    background-attachment: fixed; /* Create parallax base with CSS */
+}
+/* #endregion Background */
+/*
+*
+*/
+/* #region Body */
+#main {
+    display: flex;
+}
+#home {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 90%;
+    min-width: 90%;
+}
+#menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--border-radius);
+    background: transparent;
+    box-shadow: inset 0 0 20px var(--slate-20);
+    backdrop-filter: blur(1px);
+    --webkit-backdrop-filter: blur(1px);
+}
+#filters {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+/* #endregion Body */
+/*
+*
+*/
+/* #region Search */
+#searc {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+#search_button {
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    border-style: solid;
+    border-width: 2px 2px 0 2px;
+    border-color: var(--tertiary-color);
+}
+#progress_wrapper {
+    border-width: 0px 2px 2px 2px;
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+}
+/* #endregion Search */
+/*
+*
+*/
+/* #region Tooltip */
+#tooltip {
+    position: absolute;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    font-size: 12px;
+    font-family: var(--font-family);
+    border-radius: 4px;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 9999;
+    display: none; /* Initially hidden */
+}
+/* #endregion Tooltip */

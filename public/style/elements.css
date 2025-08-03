@@ -1,0 +1,68 @@
+/* #region Core */
+* {
+    font-family: var(--font-family);
+    transition: all 0.5s ease;
+}
+
+html,
+body {
+    max-width: 90%;
+    padding: 50px;
+    gap: 40px;
+    margin: auto;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 90vh;
+    max-height: 100vh;
+    color: var(--font-color);
+    font-family: var(--font-family);
+    font-size: clamp(14px, 1.25vw, 24px);
+}
+
+main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 80vh;
+}
+
+/* #endregion Core */
+/*
+*
+*/
+/* #region Buttons */
+button {
+    padding: 10px 20px;
+    font-size: 1.2rem;
+    background: var(--secondary-color-50);
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    font-family: var(--font-family);
+    cursor: pointer;
+    border-radius: var(--border-radius);
+    width: 100%;
+    box-sizing: border-box;
+    transition: all 0.2s ease-in-out;
+}
+
+button:hover {
+    background: var(--tertiary-color);
+    color: #000;
+}
+
+/* #endregion Buttons */
+/*
+*
+*/
+/* #region Header and Footer */
+header,
+footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 50px;
+}
+
+/* #endregion Header and Footer */

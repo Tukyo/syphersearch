@@ -1,0 +1,21 @@
+{
+  "name": "syphersearch",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/Main.ts --bundle --outfile=public/build/main.js --format=esm --platform=browser --sourcemap",
+    "watch": "esbuild src/Main.ts --bundle --outfile=public/build/main.js --format=esm --platform=browser --sourcemap --watch",
+    "dict": "node --loader ts-node/esm utility/GenerateDict.ts",
+    "dev": "npm run build && echo Build complete."
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "open": "^9.0.0",
+    "unique-names-generator": "^4.7.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.8",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
+}

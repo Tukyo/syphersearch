@@ -1,0 +1,67 @@
+/* #region Sliders */
+.wrapper {
+    width: 100%;
+    height: 8px;
+    background: var(--secondary-color-50);
+    border: 2px solid var(--tertiary-color);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-sizing: border-box;
+}
+.fill {
+    height: 100%;
+    width: 0%;
+    background-color: var(--primary-color);
+    transition: width 0.5s ease;
+}
+/* #endregion Sliders */
+/*
+*
+*/
+/* #region Header and Footer */
+.header_svg {
+    pointer-events: none;
+}
+.header-logo svg {
+    width: 4vh;   
+    vertical-align: middle;
+}
+.header-logo:hover {
+    cursor: pointer;
+}
+.header-logo:hover .cls-1 {
+    fill: var(--primary-color);
+    cursor: pointer;
+}
+.header-logo:hover svg path {
+    stroke: var(--primary-color);
+    cursor: pointer;
+}
+/* #endregion Header and Footer */
+/*
+*
+*/
+/* #region Container */
+.container {
+    min-width: 90%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+/* #endregion Container */
+/*
+*
+*/
+/* #region Input */
+.input {
+    width: 25%;
+    padding: 5px;
+    border: 2px solid var(--tertiary-color);
+    border-radius: var(--border-radius);
+    background-color: var(--secondary-color-50);
+    color: var(--primary-color);
+    font-family: var(--font-family);
+    font-size: 0.75rem;
+}
+/* #endregion Input */

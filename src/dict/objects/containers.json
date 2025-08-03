@@ -1,0 +1,32 @@
+{
+  "description": "List of objects that can contain other objects",
+  "containers": [
+    "bag",
+    "balloon",
+    "barrel",
+    "beaker",
+    "bottle",
+    "bowl",
+    "box",
+    "bucket",
+    "briefcase",
+    "cabinet",
+    "can",
+    "case",
+    "chest",
+    "cup",
+    "display",
+    "drawer",
+    "flask",
+    "glass",
+    "jar",
+    "mug",
+    "pouch",
+    "purse",
+    "tray",
+    "trunk",
+    "tube",
+    "vase",
+    "wallet"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+    "description": "List of different forms of government from Wikipedia https://en.wikipedia.org/wiki/List_of_forms_of_government",
+    "governments": [
+        "autocracy",
+        "democracy",
+        "oligarchy",
+        "anarchy",
+        "confederation",
+        "federation",
+        "unitary state",
+        "demarchy",
+        "electocracy",
+        "republic",
+        "theocracy",
+        "plutocracy",
+        "technocracy",
+        "monarchy",
+        "dictatorship",
+        "city-state",
+        "commune",
+        "empire",
+        "colony"
+    ]
+}
