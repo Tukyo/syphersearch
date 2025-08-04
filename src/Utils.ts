@@ -7,7 +7,7 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 */
 
-import { DEBUG } from "./Config";
+import { sessionResults } from "./Cache";
 import { UIConfig } from "./Defs";
 
 // #region > Randomization <
@@ -77,19 +77,19 @@ export function tooltip(element: HTMLElement, message: string): void {
     let targetY = 0;
     let animating = false;
 
-    element.addEventListener("mouseenter", (e) => {
+    element.addEventListener("mouseover", (e) => {
+        if (element.contains(e.relatedTarget as Node)) return;
+
         tooltipEl!.textContent = message;
         tooltipEl!.style.display = "block";
-        currentX = e.clientX + 12;
-        currentY = e.clientY + 12;
-        targetX = currentX;
-        targetY = currentY;
-        tooltipEl!.style.left = `${currentX}px`;
-        tooltipEl!.style.top = `${currentY}px`;
-
-        if (DEBUG.ENABLED) {
-            console.log(`Tooltip initialized at (${currentX}, ${currentY}) with message: "${message}"`);
-        }
+        const x = e.clientX + 12;
+        const y = e.clientY + 12;
+        currentX = x;
+        currentY = y;
+        targetX = x;
+        targetY = y;
+        tooltipEl!.style.left = `${x}px`;
+        tooltipEl!.style.top = `${y}px`;
     });
 
     element.addEventListener("mousemove", (e) => {
@@ -106,7 +106,9 @@ export function tooltip(element: HTMLElement, message: string): void {
         }
     });
 
-    element.addEventListener("mouseleave", () => {
+    element.addEventListener("mouseout", (e) => {
+        if (element.contains(e.relatedTarget as Node)) return;
+
         tooltipEl!.style.display = "none";
         animating = false;
     });
@@ -129,3 +131,34 @@ export function tooltip(element: HTMLElement, message: string): void {
 // ━━━━┛ ▲ ┗━━━━
 //
 // #endregion ^ Tooltip ^
+//
+// --ι══════════════ι--
+//
+// #region > Debugging <
+//
+// ━━━━┛ ▼ ┗━━━━
+export function logBatchResults(batchIndex: number, batch: { url: string }[]): void {
+  const summary = batch.map((entry) => {
+    const res = sessionResults.get(entry.url);
+    return {
+      url: entry.url,
+      result: res
+    };
+  });
+
+  console.groupCollapsed(`🔍 Batch ${batchIndex} Results`);
+  console.table(summary.map(s => ({
+    URL: s.url,
+    Valid: s.result?.valid ?? '—',
+    Status: s.result?.status ?? '—',
+    RedirectedTo: s.result?.redirectedTo ?? '',
+    Reason: s.result?.reason ?? '',
+    CheckedAt: s.result?.checkedAt
+      ? new Date(s.result.checkedAt).toLocaleTimeString()
+      : ''
+  })));
+  console.groupEnd();
+}
+// ━━━━┛ ▲ ┗━━━━
+//
+// #endregion ^ Debugging ^

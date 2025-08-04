@@ -26,29 +26,63 @@
     min-height: 90%;
     min-width: 90%;
 }
-#menu {
-    display: flex;
+#menu, #results {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    max-width: 90%;
+    min-height: 100px;
     border-radius: var(--border-radius);
     background: transparent;
     box-shadow: inset 0 0 20px var(--slate-20);
-    backdrop-filter: blur(1px);
-    --webkit-backdrop-filter: blur(1px);
+    backdrop-filter: blur(2px);
+    --webkit-backdrop-filter: blur(2px);
 }
+
+#menu::before {
+    content: "";
+    position: absolute;
+    inset: 0; /* shorthand for top: 0; right: 0; bottom: 0; left: 0 */
+    pointer-events: none;
+    z-index: 1; /* above background but below content unless you need otherwise */
+}
+
+#menu > h3 {
+    position: absolute;
+    margin: 0;
+    bottom: 10px;
+    left: -250px;
+    font-size: 12rem;
+    line-height: 0.5;
+    filter: blur(125px);
+    z-index: -1;
+}
+
 #filters {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
+    flex-wrap: wrap;
+    gap: 2rem;
+    padding: 1rem;
+}
+
+#filters > h3 {
+    position: absolute;
+    margin: 0;
+    bottom: 10px;
+    left: 10px;
+    font-size: 12rem;
+    filter: blur(1px);
+    z-index: -1;
 }
 /* #endregion Body */
 /*
 *
 */
 /* #region Search */
-#searc {
+#search {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -63,7 +97,66 @@
     border-width: 0px 2px 2px 2px;
     border-radius: 0 0 var(--border-radius) var(--border-radius);
 }
+
 /* #endregion Search */
+/*
+*
+*/
+/* #region Filters */
+#custom_input_container {
+    padding: 1rem;
+}
+#custom_input_container:hover h3 {
+    color: var(--font-color-alt);
+}
+#custom_input_container h3 {
+    margin: 0;
+    margin-bottom: 0.5rem;
+}
+#input_container {
+    min-height: 0px;
+    padding: 0.25rem;
+    border-radius: var(--border-radius);
+    background-color: var(--background-color-alt);
+}
+#insert_container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    min-height: 0px;
+    gap: 0.5rem;
+    padding: 0.5rem;
+}
+#custom_input {
+    width: 90%;
+    margin-top: 0.5rem;
+}
+#filters_container {
+    display: flex;
+    scale: 1;
+}
+/* #endregion Filters */
+/*
+*
+*/
+/* #region Tabs */
+#tabs {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+}
+#options_tab {
+    border-top-left-radius: calc(var(--border-radius) * 4);
+    border-bottom-left-radius: calc(var(--border-radius) * 4);
+}
+#results_tab {
+    border-top-right-radius: calc(var(--border-radius) * 4);
+    border-bottom-right-radius: calc(var(--border-radius) * 4);
+}
+/* #endregion Tabs */
 /*
 *
 */
@@ -72,10 +165,8 @@
     position: absolute;
     padding: 6px 10px;
     background: rgba(0, 0, 0, 0.8);
-    color: #fff;
     font-size: 12px;
-    font-family: var(--font-family);
-    border-radius: 4px;
+    border-radius: calc(var(--border-radius) * 4);
     pointer-events: none;
     white-space: nowrap;
     z-index: 9999;

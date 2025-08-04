@@ -1,7 +1,8 @@
 /* #region Core */
 * {
+    color: var(--font-color);
     font-family: var(--font-family);
-    transition: all 0.5s ease;
+    transition: all 0.25s ease;
 }
 
 html,
@@ -16,8 +17,6 @@ body {
     background-attachment: fixed;
     min-height: 90vh;
     max-height: 100vh;
-    color: var(--font-color);
-    font-family: var(--font-family);
     font-size: clamp(14px, 1.25vw, 24px);
 }
 
@@ -38,8 +37,6 @@ button {
     font-size: 1.2rem;
     background: var(--secondary-color-50);
     border: 2px solid var(--primary-color);
-    color: var(--primary-color);
-    font-family: var(--font-family);
     cursor: pointer;
     border-radius: var(--border-radius);
     width: 100%;
@@ -63,6 +60,10 @@ footer {
     justify-content: space-between;
     align-items: center;
     padding: 10px 50px;
+}
+
+h3 {
+    color: var(--font-color-accent);
 }
 
 /* #endregion Header and Footer */

@@ -1,5 +1,6 @@
 import human_authors from './human/authors.json';
 import human_bodyparts from './human/bodyparts.json';
+import materials_fabrics from './materials/fabrics.json';
 import materials_metals from './materials/metals.json';
 import music_genres from './music/genres.json';
 import music_instruments from './music/instruments.json';
@@ -22,6 +23,7 @@ export const dict = {
     bodyparts: human_bodyparts,
   },
   materials: {
+    fabrics: materials_fabrics,
     metals: materials_metals,
   },
   music: {

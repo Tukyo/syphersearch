@@ -11,7 +11,7 @@
 // ━━━━┛ ▼ ┗━━━━
 export const DEBUG = {
     ENABLED: true,
-    QUIET: false
+    QUIET: true
 }
 // ━━━━┛ ▲ ┗━━━━
 // #endregion ^ Debug ^
@@ -21,32 +21,161 @@ export const DEBUG = {
 // #region > Search <
 //
 // ━━━━┛ ▼ ┗━━━━
-export const CHARACTER_SETS = {
-    ALPHANUMERIC: "abcdefghijklmnopqrstuvwxyz0123456789",
-    ALPHABETIC: "abcdefghijklmnopqrstuvwxyz",
-    NUMERIC: "0123456789",
-    SPECIAL: "!@#$%^&*()-_=+[]{}|;:',.<>?/~`"
-};
+export const CHARACTERS = {
+    CHARACTER_SETS: {
+        ALPHANUMERIC: "abcdefghijklmnopqrstuvwxyz0123456789",
+        ALPHABETIC: "abcdefghijklmnopqrstuvwxyz",
+        NUMERIC: "0123456789",
+        SPECIAL: "!@#$%^&*()-_=+[]{}|;:',.<>?/~`"
+    },
+    CHARACTER_TYPES: {
+        VOWELS: "aeiou",
+        CONSONANTS: "bcdfghjklmnpqrstvwxyz",
+    }
+}
+export const RANDOM_MODE = {
+    RAW: "raw", // Completely random
+    PHONETIC: "phonetic", // Attempt to build words
+    DICTIONARY: "dictionary" // TODO: Implement predefined dictionary
+}
 export const SEARCH_PREFS = {
     BASE: "https://www.",
     DOMAINS: [
         ".com",
         ".net",
-        ".org"
+        ".org",
+        ".gov",
+        ".edu",
+        ".io",
+        ".xyz",
+        ".info",
+        ".biz",
+        ".co",
+        ".gay",
+        ".jp",
+        ".co.uk",
+        ".de",
     ],
     CUSTOM: {
         LENGTH: {
-            MIN: 5,
-            MAX: 10
+            MIN: 3,
+            MAX: 12
         },
-        RANDOM: false,
-        CHARACTERS: CHARACTER_SETS.ALPHANUMERIC,
+        RANDOM: RANDOM_MODE.PHONETIC,
+        COMBINATION_WEIGHT: 0.5,
+        STOP_ON_FIRST: false,
+        OPEN_ON_FIND: false,
+        CHARACTERS: CHARACTERS.CHARACTER_SETS.ALPHABETIC,
+        INSERT: "random", // Can be dynamically set to "prefix" or "suffix"
     },
     LIMITS: {
         RETRIES: 1000,
-        TIMEOUT: 1000
+        TIMEOUT: 1000,
+        BATCH: 10,
+        BUFFER: 1000 // ms time between batches
     }
 }
+export const PATTERNS = [
+    // Short patterns (3-5 chars)
+    { pattern: "cvc", weight: 15 }, //cat, dog, sun
+    { pattern: "cvcc", weight: 12 }, //hand, wolf, park
+    { pattern: "ccvc", weight: 8 }, //stop, plan, true
+    { pattern: "cvcv", weight: 10 }, //hero, data, baby
+    { pattern: "vcv", weight: 6 }, //age, ice, eye
+    { pattern: "vcc", weight: 5 }, //and, end, old
+    { pattern: "ccv", weight: 4 }, //sky, try, fly
+    { pattern: "vccv", weight: 6 }, //also, into, open
+    { pattern: "cvv", weight: 4 }, //sea, tea, zoo
+    { pattern: "ccvv", weight: 3 }, //blue, true, free
+
+    // Medium patterns (4-7 chars)
+    { pattern: "cvcvc", weight: 20 }, //basic, magic, music
+    { pattern: "cvccv", weight: 15 }, //apple, simple, table
+    { pattern: "ccvcv", weight: 8 }, //drama, price, place
+    { pattern: "cvcvv", weight: 5 }, //video, radio, piano
+    { pattern: "vccvc", weight: 6 }, //under, after, other
+    { pattern: "vcvcv", weight: 7 }, //again, above, about
+    { pattern: "ccvcc", weight: 6 }, //block, plant, front
+    { pattern: "cvccc", weight: 4 }, //world, first, worst
+    { pattern: "ccccv", weight: 2 }, //street, strong
+    { pattern: "vcvcc", weight: 5 }, //event, actor, order
+    { pattern: "cvcvcc", weight: 8 }, //better, center, winter
+    { pattern: "cvccvc", weight: 10 }, //market, garden, person
+
+    // Longer patterns (6+ chars)
+    { pattern: "cvcvcv", weight: 12 }, //banana, camera, canada
+    { pattern: "cvccvcv", weight: 5 }, //fantastic, calendar
+    { pattern: "cvcvcvc", weight: 8 }, //america, develop, computer
+    { pattern: "vcvcvc", weight: 6 }, //elephant, umbrella
+    { pattern: "cvcvcvv", weight: 4 }, //dangerous, beautiful
+    { pattern: "ccvcvcv", weight: 5 }, //traveling, different
+    { pattern: "vcvccvc", weight: 4 }, //important, understand
+    { pattern: "cvcvccv", weight: 4 }, //remember, september
+    { pattern: "ccvcvcc", weight: 3 }, //progress, connect
+    { pattern: "cvcvcvcv", weight: 6 }, //absolutely, television
+    { pattern: "vcvcvcv", weight: 4 }, //economy, democracy
+    { pattern: "ccvcvcvc", weight: 3 }, //practical, specific
+    { pattern: "cvcccvc", weight: 3 }, //children, standard
+    { pattern: "cvccvcvc", weight: 4 }, //wonderful, political
+    { pattern: "vcvcvcvc", weight: 3 }, //helicopter, refrigerator
+    
+    // Extra long patterns (8+ chars)
+    { pattern: "cvcvcvcvc", weight: 3 }, //communication, organization
+    { pattern: "ccvcvcvcv", weight: 2 }, //representative
+    { pattern: "cvcvcvcvcv", weight: 2 }, //responsibility
+    { pattern: "vcvcvcvcv", weight: 2 }, //international
+]
+export const COMBINATIONS = [
+    // Common consonant clusters
+    { pattern: "th", weight: 25 }, //the, think, both
+    { pattern: "st", weight: 20 }, //stop, best, first
+    { pattern: "ch", weight: 18 }, //child, much, beach
+    { pattern: "sh", weight: 15 }, //show, fish, wish
+    { pattern: "ng", weight: 15 }, //sing, long, thing
+    { pattern: "nt", weight: 12 }, //want, front, point
+    { pattern: "nd", weight: 12 }, //hand, kind, around
+    { pattern: "ck", weight: 10 }, //back, check, quick
+    { pattern: "ll", weight: 10 }, //call, well, tell
+    { pattern: "ss", weight: 8 }, //class, less, kiss
+    { pattern: "tt", weight: 6 }, //better, letter, little
+    { pattern: "pp", weight: 5 }, //happy, apple, pepper
+    { pattern: "ff", weight: 5 }, //off, stuff, coffee
+    { pattern: "mm", weight: 4 }, //summer, hammer, common
+    { pattern: "nn", weight: 4 }, //funny, dinner, cannot
+    { pattern: "rr", weight: 3 }, //sorry, carry, mirror
+    { pattern: "dd", weight: 3 }, //add, middle, sudden
+    { pattern: "bb", weight: 2 }, //rabbit, hobby, bubble
+    { pattern: "gg", weight: 2 }, //bigger, egg,agger
+    
+    // Common vowel combinations
+    { pattern: "ee", weight: 12 }, //see, tree, free
+    { pattern: "oo", weight: 10 }, //book, good, food
+    { pattern: "ea", weight: 8 }, //sea, read, beach
+    { pattern: "ou", weight: 8 }, //house, about, mouth
+    { pattern: "ai", weight: 6 }, //main, rain, again
+    { pattern: "ie", weight: 6 }, //piece, field, believe
+    { pattern: "ue", weight: 4 }, //blue, true, value
+    { pattern: "oa", weight: 4 }, //boat, road, soap
+    { pattern: "au", weight: 3 }, //because, caught, laugh
+    { pattern: "ei", weight: 3 }, //receive, eight, weight
+    
+    // Common consonant-vowel patterns
+    { pattern: "er", weight: 20 }, //water, after, other
+    { pattern: "re", weight: 15 }, //more, here, where
+    { pattern: "or", weight: 12 }, //for, work, word
+    { pattern: "ar", weight: 10 }, //car, part, start
+    { pattern: "le", weight: 10 }, //table, people, little
+    { pattern: "en", weight: 8 }, //when, then, open
+    { pattern: "an", weight: 8 }, //man, can, plan
+    { pattern: "on", weight: 6 }, //on, long, front
+    { pattern: "in", weight: 6 }, //in, thing, begin
+    { pattern: "al", weight: 6 }, //all, also, small
+    { pattern: "ed", weight: 6 }, //asked, worked, played
+    { pattern: "es", weight: 6 }, //yes, goes, comes
+    { pattern: "ly", weight: 5 }, //only, really, family
+    { pattern: "ty", weight: 4 }, //city, party, empty
+    { pattern: "ny", weight: 3 }, //any, many, funny
+]
 // ━━━━┛ ▲ ┗━━━━
 //
 // #endregion ^ Search ^
@@ -130,17 +259,89 @@ export const INTERFACE = {
             CLASS: "container",
             APPEND: "main"
         },
+        TABS: {
+            TYPE: "div",
+            ID: "tabs",
+            CLASS: "container",
+            APPEND: "home",
+            OPTIONS_TAB: {
+                TYPE: "div",
+                ID: "options_tab",
+                CLASS: "tab",
+                HTML: `
+                    <h3>Options</h3>
+                `,
+                APPEND: "tabs"
+            },
+            RESULTS_TAB: {
+                TYPE: "div",
+                ID: "results_tab",
+                CLASS: "tab",
+                HTML: `
+                    <h3>Results</h3>
+                `,
+                APPEND: "tabs"
+            }
+        },
         MENU: {
             TYPE: "div",
             ID: "menu",
             CLASS: "container",
+            HTML: `
+                <h3>tehe</h3>
+            `,
             APPEND: "home"
+        },
+        RESULTS: {
+            TYPE: "div",
+            ID: "results",
+            CLASS: "container",
+            APPEND: "home"
+        },
+        RESULT: {
+            TYPE: "div",
+            ID: "result",
+            CLASS: "result",
+            APPEND: "results"
+        },
+        FILTERS_CONTAINER: {
+            TYPE: "div",
+            ID: "filters_container",
+            CLASS: "container",
+            APPEND: "menu"
         },
         FILTERS: {
             TYPE: "div",
             ID: "filters",
             CLASS: "container",
-            APPEND: "menu"
+            APPEND: "filters_container"
+        },
+        FILTER_CATEGORIES: {
+            TYPE: "div",
+            ID: " ", // Apply dynamically
+            CLASS: "category",
+            APPEND: "filters"
+        },
+        FILTER_CONTAINTERS: {
+            TYPE: "div",
+            ID: " ",  // Apply dynamically
+            CLASS: "filters",
+            APPEND: " "  // Apply dynamically
+        },
+        CUSTOM_INPUT_CONTAINER: {
+            TYPE: "div",
+            ID: "custom_input_container",
+            CLASS: "category",
+            HTML: `
+                <h3>Custom Word</h3>
+            `,
+            APPEND: "filters_container"
+        },
+        INPUT_CONTAINER: {
+            TYPE: "div",
+            ID: "input_container",
+            CLASS: "container",
+            APPEND: "custom_input_container"
         },
         INPUT: {
             TYPE: "input",
@@ -148,8 +349,38 @@ export const INTERFACE = {
             CLASS: "input",
             PLACEHOLDER: "Custom Word Entry...",
             TOOLTIP: "Enter a custom word to include in the search.",
-            APPEND: "menu"
+            APPEND: "input_container"
 
+        },
+        INSERT_CONTAINER: {
+            TYPE: "div",
+            ID: "insert_container",
+            CLASS: "container",
+            APPEND: "input_container",
+            INSERT_PREFIX: {
+                TYPE: "div",
+                ID: "insert_prefix",
+                CLASS: "toggler",
+                TOOLTIP: "Insert word at the beginning",
+                TEXT: "Prefix",
+                APPEND: "insert_container"
+            },
+            INSERT_SUFFIX: {
+                TYPE: "div",
+                ID: "insert_suffix",
+                CLASS: "toggler",
+                TOOLTIP: "Insert word at the end",
+                TEXT: "Suffix",
+                APPEND: "insert_container"
+            },
+            INSERT_RANDOM: {
+                TYPE: "div",
+                ID: "insert_random",
+                CLASS: "toggler",
+                TOOLTIP: "Insert word randomly",
+                TEXT: "Random",
+                APPEND: "insert_container"
+            }
         },
         SEARCH: {
             TYPE: "div",
@@ -180,6 +411,17 @@ export const INTERFACE = {
                 ID: "progress_fill",
                 CLASS: "fill",
                 APPEND: "progress_wrapper"
+            }
+        }
+    },
+    TOGGLE: {
+        FILTERS_TOGGLE: {
+            TOGGLER: {
+                TYPE: "div",
+                ID: "toggle_wrapper",
+                CLASS: "toggler",
+                TEXT: " ", // Apply dynamically
+                APPEND: "filters"
             }
         }
     }

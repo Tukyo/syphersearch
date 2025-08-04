@@ -1993,7 +1993,7 @@ var adapters_default = {
     }
     if (!adapter) {
       const reasons = Object.entries(rejectedReasons).map(
-        ([id, state]) => `adapter ${id} ` + (state === false ? "is not supported by the environment" : "is not available in the build")
+        ([id, state2]) => `adapter ${id} ` + (state2 === false ? "is not supported by the environment" : "is not available in the build")
       );
       let s = length ? reasons.length > 1 ? "since :\n" + reasons.map(renderReason).join("\n") : " " + renderReason(reasons[0]) : "as no adapter specified";
       throw new AxiosError_default(
@@ -2575,34 +2575,248 @@ var t = ["amaranth", "amber", "amethyst", "apricot", "aqua", "aquamarine", "azur
 // src/Config.ts
 var DEBUG = {
   ENABLED: true,
-  QUIET: false
+  QUIET: true
 };
-var CHARACTER_SETS = {
-  ALPHANUMERIC: "abcdefghijklmnopqrstuvwxyz0123456789",
-  ALPHABETIC: "abcdefghijklmnopqrstuvwxyz",
-  NUMERIC: "0123456789",
-  SPECIAL: "!@#$%^&*()-_=+[]{}|;:',.<>?/~`"
+var CHARACTERS = {
+  CHARACTER_SETS: {
+    ALPHANUMERIC: "abcdefghijklmnopqrstuvwxyz0123456789",
+    ALPHABETIC: "abcdefghijklmnopqrstuvwxyz",
+    NUMERIC: "0123456789",
+    SPECIAL: "!@#$%^&*()-_=+[]{}|;:',.<>?/~`"
+  },
+  CHARACTER_TYPES: {
+    VOWELS: "aeiou",
+    CONSONANTS: "bcdfghjklmnpqrstvwxyz"
+  }
+};
+var RANDOM_MODE = {
+  RAW: "raw",
+  // Completely random
+  PHONETIC: "phonetic",
+  // Attempt to build words
+  DICTIONARY: "dictionary"
+  // TODO: Implement predefined dictionary
 };
 var SEARCH_PREFS = {
   BASE: "https://www.",
   DOMAINS: [
     ".com",
     ".net",
-    ".org"
+    ".org",
+    ".gov",
+    ".edu",
+    ".io",
+    ".xyz",
+    ".info",
+    ".biz",
+    ".co",
+    ".gay",
+    ".jp",
+    ".co.uk",
+    ".de"
   ],
   CUSTOM: {
     LENGTH: {
-      MIN: 5,
-      MAX: 10
+      MIN: 3,
+      MAX: 12
     },
-    RANDOM: false,
-    CHARACTERS: CHARACTER_SETS.ALPHANUMERIC
+    RANDOM: RANDOM_MODE.PHONETIC,
+    COMBINATION_WEIGHT: 0.5,
+    STOP_ON_FIRST: false,
+    OPEN_ON_FIND: false,
+    CHARACTERS: CHARACTERS.CHARACTER_SETS.ALPHABETIC,
+    INSERT: "random"
+    // Can be dynamically set to "prefix" or "suffix"
   },
   LIMITS: {
     RETRIES: 1e3,
-    TIMEOUT: 1e3
+    TIMEOUT: 1e3,
+    BATCH: 10,
+    BUFFER: 1e3
+    // ms time between batches
   }
 };
+var PATTERNS = [
+  // Short patterns (3-5 chars)
+  { pattern: "cvc", weight: 15 },
+  //cat, dog, sun
+  { pattern: "cvcc", weight: 12 },
+  //hand, wolf, park
+  { pattern: "ccvc", weight: 8 },
+  //stop, plan, true
+  { pattern: "cvcv", weight: 10 },
+  //hero, data, baby
+  { pattern: "vcv", weight: 6 },
+  //age, ice, eye
+  { pattern: "vcc", weight: 5 },
+  //and, end, old
+  { pattern: "ccv", weight: 4 },
+  //sky, try, fly
+  { pattern: "vccv", weight: 6 },
+  //also, into, open
+  { pattern: "cvv", weight: 4 },
+  //sea, tea, zoo
+  { pattern: "ccvv", weight: 3 },
+  //blue, true, free
+  // Medium patterns (4-7 chars)
+  { pattern: "cvcvc", weight: 20 },
+  //basic, magic, music
+  { pattern: "cvccv", weight: 15 },
+  //apple, simple, table
+  { pattern: "ccvcv", weight: 8 },
+  //drama, price, place
+  { pattern: "cvcvv", weight: 5 },
+  //video, radio, piano
+  { pattern: "vccvc", weight: 6 },
+  //under, after, other
+  { pattern: "vcvcv", weight: 7 },
+  //again, above, about
+  { pattern: "ccvcc", weight: 6 },
+  //block, plant, front
+  { pattern: "cvccc", weight: 4 },
+  //world, first, worst
+  { pattern: "ccccv", weight: 2 },
+  //street, strong
+  { pattern: "vcvcc", weight: 5 },
+  //event, actor, order
+  { pattern: "cvcvcc", weight: 8 },
+  //better, center, winter
+  { pattern: "cvccvc", weight: 10 },
+  //market, garden, person
+  // Longer patterns (6+ chars)
+  { pattern: "cvcvcv", weight: 12 },
+  //banana, camera, canada
+  { pattern: "cvccvcv", weight: 5 },
+  //fantastic, calendar
+  { pattern: "cvcvcvc", weight: 8 },
+  //america, develop, computer
+  { pattern: "vcvcvc", weight: 6 },
+  //elephant, umbrella
+  { pattern: "cvcvcvv", weight: 4 },
+  //dangerous, beautiful
+  { pattern: "ccvcvcv", weight: 5 },
+  //traveling, different
+  { pattern: "vcvccvc", weight: 4 },
+  //important, understand
+  { pattern: "cvcvccv", weight: 4 },
+  //remember, september
+  { pattern: "ccvcvcc", weight: 3 },
+  //progress, connect
+  { pattern: "cvcvcvcv", weight: 6 },
+  //absolutely, television
+  { pattern: "vcvcvcv", weight: 4 },
+  //economy, democracy
+  { pattern: "ccvcvcvc", weight: 3 },
+  //practical, specific
+  { pattern: "cvcccvc", weight: 3 },
+  //children, standard
+  { pattern: "cvccvcvc", weight: 4 },
+  //wonderful, political
+  { pattern: "vcvcvcvc", weight: 3 },
+  //helicopter, refrigerator
+  // Extra long patterns (8+ chars)
+  { pattern: "cvcvcvcvc", weight: 3 },
+  //communication, organization
+  { pattern: "ccvcvcvcv", weight: 2 },
+  //representative
+  { pattern: "cvcvcvcvcv", weight: 2 },
+  //responsibility
+  { pattern: "vcvcvcvcv", weight: 2 }
+  //international
+];
+var COMBINATIONS = [
+  // Common consonant clusters
+  { pattern: "th", weight: 25 },
+  //the, think, both
+  { pattern: "st", weight: 20 },
+  //stop, best, first
+  { pattern: "ch", weight: 18 },
+  //child, much, beach
+  { pattern: "sh", weight: 15 },
+  //show, fish, wish
+  { pattern: "ng", weight: 15 },
+  //sing, long, thing
+  { pattern: "nt", weight: 12 },
+  //want, front, point
+  { pattern: "nd", weight: 12 },
+  //hand, kind, around
+  { pattern: "ck", weight: 10 },
+  //back, check, quick
+  { pattern: "ll", weight: 10 },
+  //call, well, tell
+  { pattern: "ss", weight: 8 },
+  //class, less, kiss
+  { pattern: "tt", weight: 6 },
+  //better, letter, little
+  { pattern: "pp", weight: 5 },
+  //happy, apple, pepper
+  { pattern: "ff", weight: 5 },
+  //off, stuff, coffee
+  { pattern: "mm", weight: 4 },
+  //summer, hammer, common
+  { pattern: "nn", weight: 4 },
+  //funny, dinner, cannot
+  { pattern: "rr", weight: 3 },
+  //sorry, carry, mirror
+  { pattern: "dd", weight: 3 },
+  //add, middle, sudden
+  { pattern: "bb", weight: 2 },
+  //rabbit, hobby, bubble
+  { pattern: "gg", weight: 2 },
+  //bigger, egg,agger
+  // Common vowel combinations
+  { pattern: "ee", weight: 12 },
+  //see, tree, free
+  { pattern: "oo", weight: 10 },
+  //book, good, food
+  { pattern: "ea", weight: 8 },
+  //sea, read, beach
+  { pattern: "ou", weight: 8 },
+  //house, about, mouth
+  { pattern: "ai", weight: 6 },
+  //main, rain, again
+  { pattern: "ie", weight: 6 },
+  //piece, field, believe
+  { pattern: "ue", weight: 4 },
+  //blue, true, value
+  { pattern: "oa", weight: 4 },
+  //boat, road, soap
+  { pattern: "au", weight: 3 },
+  //because, caught, laugh
+  { pattern: "ei", weight: 3 },
+  //receive, eight, weight
+  // Common consonant-vowel patterns
+  { pattern: "er", weight: 20 },
+  //water, after, other
+  { pattern: "re", weight: 15 },
+  //more, here, where
+  { pattern: "or", weight: 12 },
+  //for, work, word
+  { pattern: "ar", weight: 10 },
+  //car, part, start
+  { pattern: "le", weight: 10 },
+  //table, people, little
+  { pattern: "en", weight: 8 },
+  //when, then, open
+  { pattern: "an", weight: 8 },
+  //man, can, plan
+  { pattern: "on", weight: 6 },
+  //on, long, front
+  { pattern: "in", weight: 6 },
+  //in, thing, begin
+  { pattern: "al", weight: 6 },
+  //all, also, small
+  { pattern: "ed", weight: 6 },
+  //asked, worked, played
+  { pattern: "es", weight: 6 },
+  //yes, goes, comes
+  { pattern: "ly", weight: 5 },
+  //only, really, family
+  { pattern: "ty", weight: 4 },
+  //city, party, empty
+  { pattern: "ny", weight: 3 }
+  //any, many, funny
+];
 var ICON = {
   LOGO: {
     TYPE: "svg",
@@ -2677,17 +2891,92 @@ var INTERFACE = {
       CLASS: "container",
       APPEND: "main"
     },
+    TABS: {
+      TYPE: "div",
+      ID: "tabs",
+      CLASS: "container",
+      APPEND: "home",
+      OPTIONS_TAB: {
+        TYPE: "div",
+        ID: "options_tab",
+        CLASS: "tab",
+        HTML: `
+                    <h3>Options</h3>
+                `,
+        APPEND: "tabs"
+      },
+      RESULTS_TAB: {
+        TYPE: "div",
+        ID: "results_tab",
+        CLASS: "tab",
+        HTML: `
+                    <h3>Results</h3>
+                `,
+        APPEND: "tabs"
+      }
+    },
     MENU: {
       TYPE: "div",
       ID: "menu",
       CLASS: "container",
+      HTML: `
+                <h3>tehe</h3>
+            `,
       APPEND: "home"
+    },
+    RESULTS: {
+      TYPE: "div",
+      ID: "results",
+      CLASS: "container",
+      APPEND: "home"
+    },
+    RESULT: {
+      TYPE: "div",
+      ID: "result",
+      CLASS: "result",
+      APPEND: "results"
+    },
+    FILTERS_CONTAINER: {
+      TYPE: "div",
+      ID: "filters_container",
+      CLASS: "container",
+      APPEND: "menu"
     },
     FILTERS: {
       TYPE: "div",
       ID: "filters",
       CLASS: "container",
-      APPEND: "menu"
+      APPEND: "filters_container"
+    },
+    FILTER_CATEGORIES: {
+      TYPE: "div",
+      ID: " ",
+      // Apply dynamically
+      CLASS: "category",
+      APPEND: "filters"
+    },
+    FILTER_CONTAINTERS: {
+      TYPE: "div",
+      ID: " ",
+      // Apply dynamically
+      CLASS: "filters",
+      APPEND: " "
+      // Apply dynamically
+    },
+    CUSTOM_INPUT_CONTAINER: {
+      TYPE: "div",
+      ID: "custom_input_container",
+      CLASS: "category",
+      HTML: `
+                <h3>Custom Word</h3>
+            `,
+      APPEND: "filters_container"
+    },
+    INPUT_CONTAINER: {
+      TYPE: "div",
+      ID: "input_container",
+      CLASS: "container",
+      APPEND: "custom_input_container"
     },
     INPUT: {
       TYPE: "input",
@@ -2695,7 +2984,37 @@ var INTERFACE = {
       CLASS: "input",
       PLACEHOLDER: "Custom Word Entry...",
       TOOLTIP: "Enter a custom word to include in the search.",
-      APPEND: "menu"
+      APPEND: "input_container"
+    },
+    INSERT_CONTAINER: {
+      TYPE: "div",
+      ID: "insert_container",
+      CLASS: "container",
+      APPEND: "input_container",
+      INSERT_PREFIX: {
+        TYPE: "div",
+        ID: "insert_prefix",
+        CLASS: "toggler",
+        TOOLTIP: "Insert word at the beginning",
+        TEXT: "Prefix",
+        APPEND: "insert_container"
+      },
+      INSERT_SUFFIX: {
+        TYPE: "div",
+        ID: "insert_suffix",
+        CLASS: "toggler",
+        TOOLTIP: "Insert word at the end",
+        TEXT: "Suffix",
+        APPEND: "insert_container"
+      },
+      INSERT_RANDOM: {
+        TYPE: "div",
+        ID: "insert_random",
+        CLASS: "toggler",
+        TOOLTIP: "Insert word randomly",
+        TEXT: "Random",
+        APPEND: "insert_container"
+      }
     },
     SEARCH: {
       TYPE: "div",
@@ -2728,6 +3047,18 @@ var INTERFACE = {
         APPEND: "progress_wrapper"
       }
     }
+  },
+  TOGGLE: {
+    FILTERS_TOGGLE: {
+      TOGGLER: {
+        TYPE: "div",
+        ID: "toggle_wrapper",
+        CLASS: "toggler",
+        TEXT: " ",
+        // Apply dynamically
+        APPEND: "filters"
+      }
+    }
   }
 };
 
@@ -2747,6 +3078,26 @@ var ProgressEventEmitter = class {
   }
 };
 var ProgressEvents = new ProgressEventEmitter();
+var ValidResultEventEmitter = class {
+  constructor() {
+    this.listeners = /* @__PURE__ */ new Set();
+  }
+  on(cb) {
+    this.listeners.add(cb);
+  }
+  off(cb) {
+    this.listeners.delete(cb);
+  }
+  emit(url) {
+    for (const cb of this.listeners) cb(url);
+  }
+};
+var ValidResultEvents = new ValidResultEventEmitter();
+
+// src/Cache.ts
+var sessionResults = /* @__PURE__ */ new Map();
+var validResults = /* @__PURE__ */ new Map();
+var redirectedResults = /* @__PURE__ */ new Map();
 
 // src/Utils.ts
 function randomString(characters, length) {
@@ -2784,18 +3135,18 @@ function tooltip(element, message) {
   let targetX = 0;
   let targetY = 0;
   let animating = false;
-  element.addEventListener("mouseenter", (e2) => {
+  element.addEventListener("mouseover", (e2) => {
+    if (element.contains(e2.relatedTarget)) return;
     tooltipEl.textContent = message;
     tooltipEl.style.display = "block";
-    currentX = e2.clientX + 12;
-    currentY = e2.clientY + 12;
-    targetX = currentX;
-    targetY = currentY;
-    tooltipEl.style.left = `${currentX}px`;
-    tooltipEl.style.top = `${currentY}px`;
-    if (DEBUG.ENABLED) {
-      console.log(`Tooltip initialized at (${currentX}, ${currentY}) with message: "${message}"`);
-    }
+    const x = e2.clientX + 12;
+    const y = e2.clientY + 12;
+    currentX = x;
+    currentY = y;
+    targetX = x;
+    targetY = y;
+    tooltipEl.style.left = `${x}px`;
+    tooltipEl.style.top = `${y}px`;
   });
   element.addEventListener("mousemove", (e2) => {
     const dx = e2.clientX + 12 - targetX;
@@ -2810,7 +3161,8 @@ function tooltip(element, message) {
       }
     }
   });
-  element.addEventListener("mouseleave", () => {
+  element.addEventListener("mouseout", (e2) => {
+    if (element.contains(e2.relatedTarget)) return;
     tooltipEl.style.display = "none";
     animating = false;
   });
@@ -2828,6 +3180,3365 @@ function tooltip(element, message) {
     }
   }
 }
+function logBatchResults(batchIndex, batch) {
+  const summary = batch.map((entry) => {
+    const res = sessionResults.get(entry.url);
+    return {
+      url: entry.url,
+      result: res
+    };
+  });
+  console.groupCollapsed(`\u{1F50D} Batch ${batchIndex} Results`);
+  console.table(summary.map((s) => ({
+    URL: s.url,
+    Valid: s.result?.valid ?? "\u2014",
+    Status: s.result?.status ?? "\u2014",
+    RedirectedTo: s.result?.redirectedTo ?? "",
+    Reason: s.result?.reason ?? "",
+    CheckedAt: s.result?.checkedAt ? new Date(s.result.checkedAt).toLocaleTimeString() : ""
+  })));
+  console.groupEnd();
+}
+
+// src/dict/human/authors.json
+var authors_default = {
+  description: "Last names of humans well known for writing books",
+  authors: [
+    "Adams",
+    "Alcott",
+    "Angelou",
+    "Asimov",
+    "Atwood",
+    "Auden",
+    "Austen",
+    "Ballard",
+    "Bradbury",
+    "Brautigan",
+    "Bront\xEB",
+    "Bukowski",
+    "Burroughs",
+    "Camus",
+    "Capote",
+    "Carroll",
+    "Carver",
+    "Cather",
+    "Chekhov",
+    "Chesterton",
+    "Chomsky",
+    "Clancy",
+    "Clarke",
+    "Collins",
+    "Conrad",
+    "Cooper",
+    "Crichton",
+    "Cummings",
+    "Dahl",
+    "DeLillo",
+    "Dick",
+    "Dickens",
+    "Didion",
+    "Dostoyevsky",
+    "Douglass",
+    "Dreiser",
+    "Dumas",
+    "Eco",
+    "Eliot",
+    "Ellison",
+    "Faulkner",
+    "Fitzgerald",
+    "Fleming",
+    "Forster",
+    "Franzen",
+    "Frost",
+    "Gaiman",
+    "Garc\xEDa M\xE1rquez",
+    "Gibran",
+    "Golding",
+    "Grisham",
+    "Hawthorne",
+    "Hemingway",
+    "Henry",
+    "Hesse",
+    "Homer",
+    "Huxley",
+    "Ishiguro",
+    "Joyce",
+    "Kafka",
+    "Kerouac",
+    "King",
+    "Kingsolver",
+    "Kipling",
+    "Koontz",
+    "Kundera",
+    "Lawrence",
+    "Le Guin",
+    "Lee",
+    "London",
+    "Lovecraft",
+    "Mailer",
+    "Mann",
+    "McCarthy",
+    "Melville",
+    "Miller",
+    "Milne",
+    "Mitchell",
+    "Morrison",
+    "Murakami",
+    "Nabokov",
+    "Neruda",
+    "Orwell",
+    "Palahniuk",
+    "Poe",
+    "Potter",
+    "Pratchett",
+    "Proust",
+    "Pullman",
+    "Rand",
+    "Rhys",
+    "Roth",
+    "Rowling",
+    "Rushdie",
+    "Salinger",
+    "Sartre",
+    "Scott",
+    "Seuss",
+    "Shakespeare",
+    "Shelley",
+    "Sinclair",
+    "Smith",
+    "Steinbeck",
+    "Stephenson",
+    "Stine",
+    "Stoker",
+    "Swift",
+    "Thoreau",
+    "Tolstoy",
+    "Tolkien",
+    "Twain",
+    "Updike",
+    "Verne",
+    "Vonnegut",
+    "Walker",
+    "Wells",
+    "Welty",
+    "Wharton",
+    "White",
+    "Whitman",
+    "Wilde",
+    "Williams",
+    "Woolf",
+    "Wright"
+  ]
+};
+
+// src/dict/human/bodyparts.json
+var bodyparts_default = {
+  description: "A list of common human body parts.",
+  bodyParts: [
+    "ankle",
+    "arm",
+    "back",
+    "belly",
+    "bottom",
+    "breast",
+    "buttocks",
+    "calf",
+    "cheek",
+    "chin",
+    "ear",
+    "elbow",
+    "eye",
+    "eyebrow",
+    "eyelash",
+    "finger",
+    "fist",
+    "foot",
+    "forearm",
+    "forehead",
+    "hair",
+    "hand",
+    "head",
+    "hip",
+    "knee",
+    "leg",
+    "lip",
+    "lower leg",
+    "mouth",
+    "neck",
+    "nose",
+    "nostril",
+    "shoulder",
+    "thigh",
+    "thumb",
+    "toe",
+    "tongue",
+    "tooth",
+    "upper arm",
+    "waist",
+    "wrist"
+  ]
+};
+
+// src/dict/materials/fabrics.json
+var fabrics_default = {
+  description: "fabrics",
+  fabrics: [
+    "acrylic",
+    "alpaca",
+    "angora",
+    "canvas",
+    "cashmere",
+    "chambray",
+    "chiffon",
+    "corduroy",
+    "cotton",
+    "denim",
+    "fleece",
+    "flannel",
+    "gabardine",
+    "georgette",
+    "gingham",
+    "hemp",
+    "jersey",
+    "linen",
+    "lycra",
+    "mohair",
+    "muslin",
+    "nylon",
+    "polyester",
+    "rayon",
+    "satin",
+    "silk",
+    "spandex",
+    "suede",
+    "tulle",
+    "tweed",
+    "twill",
+    "velour",
+    "velvet",
+    "wool"
+  ]
+};
+
+// src/dict/materials/metals.json
+var metals_default = {
+  description: "metals",
+  metals: [
+    "aluminium",
+    "barium",
+    "beryllium",
+    "bismuth",
+    "cadmium",
+    "calcium",
+    "chromium",
+    "cobalt",
+    "copper",
+    "gallium",
+    "gold",
+    "iridium",
+    "iron",
+    "lead",
+    "lithium",
+    "magnesium",
+    "manganese",
+    "mercury",
+    "neptunium",
+    "nickel",
+    "osmium",
+    "palladium",
+    "platinum",
+    "plutonium",
+    "potassium",
+    "radium",
+    "silver",
+    "sodium",
+    "thallium",
+    "tin",
+    "titanium",
+    "tungsten",
+    "uranium",
+    "zinc"
+  ]
+};
+
+// src/dict/music/genres.json
+var genres_default = {
+  description: "A list of musical genres taken from wikipedia article titles.",
+  genres: [
+    "acid",
+    "aggrotech",
+    "ambient",
+    "bebop",
+    "bitpop",
+    "breakbeat",
+    "breakcore",
+    "chillwave",
+    "chiptune",
+    "colwave",
+    "crunk",
+    "darkcore",
+    "darkstep",
+    "deathcore",
+    "disco",
+    "downtempo",
+    "drill",
+    "dub",
+    "dubstep",
+    "edm",
+    "electro",
+    "electropop",
+    "emo",
+    "folktronica",
+    "funk",
+    "gabber",
+    "glitch",
+    "grime",
+    "grindcore",
+    "grunge",
+    "hardcore",
+    "hardstyle",
+    "house",
+    "idm",
+    "illbient",
+    "indie",
+    "industrial",
+    "jazz",
+    "jungle",
+    "lofi",
+    "makina",
+    "metal",
+    "noise",
+    "pop",
+    "prog",
+    "punk",
+    "rap",
+    "reggae",
+    "rock",
+    "screamo",
+    "shoegaze",
+    "ska",
+    "skweee",
+    "sludge",
+    "soul",
+    "synthpop",
+    "techno",
+    "trance",
+    "trap",
+    "triphop",
+    "vaporwave"
+  ]
+};
+
+// src/dict/music/instruments.json
+var instruments_default = {
+  description: "Musical Instruments",
+  instruments: [
+    "accordion",
+    "bagpipe",
+    "banjo",
+    "bassoon",
+    "bugle",
+    "calliope",
+    "cello",
+    "clarinet",
+    "clavichord",
+    "concertina",
+    "didgeridoo",
+    "dobro",
+    "drum",
+    "dulcimer",
+    "fiddle",
+    "fife",
+    "flute",
+    "flugelhorn",
+    "glockenspiel",
+    "guitar",
+    "harmonica",
+    "harp",
+    "harpsichord",
+    "kazoo",
+    "lute",
+    "lyre",
+    "mandolin",
+    "marimba",
+    "melodica",
+    "oboe",
+    "organ",
+    "piano",
+    "piccolo",
+    "saxophone",
+    "sitar",
+    "snare",
+    "sousaphone",
+    "synth",
+    "tambourine",
+    "theremin",
+    "tom",
+    "triangle",
+    "trombone",
+    "trumpet",
+    "tuba",
+    "ukulele",
+    "viola",
+    "violin",
+    "vuvuzela",
+    "xylophone",
+    "zither"
+  ]
+};
+
+// src/dict/nsfw/drugs.json
+var drugs_default = {
+  description: "A list of pharmaceutical drug names",
+  source: "The United States National Library of Medicine, http://druginfo.nlm.nih.gov/drugportal/",
+  drugs: [
+    "Adderall",
+    "Ambien",
+    "Antibiotics",
+    "Aspirin",
+    "Ativan",
+    "Benadryl",
+    "Caffeine",
+    "Cannabis",
+    "Cocaine",
+    "Codeine",
+    "DMT",
+    "Ecstasy",
+    "Fentanyl",
+    "Gabapentin",
+    "Heroin",
+    "Hydrocodone",
+    "Ibuprofen",
+    "Ketamine",
+    "Klonopin",
+    "LSD",
+    "Meth",
+    "Methadone",
+    "Modafinil",
+    "Molly",
+    "Morphine",
+    "Mushrooms",
+    "Nicotine",
+    "Norco",
+    "Oxycodone",
+    "OxyContin",
+    "Percocet",
+    "Prednisone",
+    "Prozac",
+    "Ritalin",
+    "Shrooms",
+    "Steroids",
+    "Suboxone",
+    "Sudafed",
+    "Trazodone",
+    "Tramadol",
+    "Tylenol",
+    "Valium",
+    "Vaping",
+    "Vicodin",
+    "Viagra",
+    "Weed",
+    "Wellbutrin",
+    "Xanax",
+    "Zoloft"
+  ]
+};
+
+// src/dict/nsfw/explicit.json
+var explicit_default = {
+  description: "Curse words and explicit terms",
+  explicit: [
+    "fuck",
+    "shit",
+    "bitch",
+    "asshole",
+    "bastard",
+    "damn",
+    "piss",
+    "cunt",
+    "douche",
+    "prick",
+    "hell",
+    "crap",
+    "fucker",
+    "shithead",
+    "motherfucker",
+    "ass",
+    "bitchass",
+    "goddamn",
+    "hoe",
+    "slut",
+    "screw",
+    "freak",
+    "trash",
+    "jerk",
+    "tool",
+    "loser",
+    "nuts",
+    "maniac",
+    "clown",
+    "psycho",
+    "moron",
+    "retard",
+    "creep",
+    "skank",
+    "bimbo",
+    "pig",
+    "scab",
+    "turd",
+    "weirdo",
+    "bozo",
+    "poser",
+    "punk",
+    "whore"
+  ]
+};
+
+// src/dict/nsfw/porn.json
+var porn_default = {
+  description: "Pure genre-based and common adult domain keywords (no branded site names)",
+  porn: [
+    "18",
+    "3d",
+    "amateur",
+    "anal",
+    "arab",
+    "asian",
+    "ass",
+    "asshole",
+    "aunty",
+    "babes",
+    "bdsm",
+    "bbw",
+    "bigass",
+    "bigboobs",
+    "bigtits",
+    "black",
+    "blonde",
+    "blowjob",
+    "bondage",
+    "brunette",
+    "bukkake",
+    "cam",
+    "cams",
+    "casting",
+    "celebs",
+    "cheating",
+    "chubby",
+    "cock",
+    "compilation",
+    "creampie",
+    "cuckold",
+    "cum",
+    "cumshot",
+    "cunt",
+    "dp",
+    "ebony",
+    "european",
+    "facial",
+    "fake",
+    "famous",
+    "fart",
+    "feet",
+    "femdom",
+    "fetish",
+    "fingering",
+    "firsttime",
+    "flashing",
+    "footfetish",
+    "footjob",
+    "freaky",
+    "fuck",
+    "fucking",
+    "gangbang",
+    "german",
+    "granny",
+    "group",
+    "hairy",
+    "handjob",
+    "hardcore",
+    "hd",
+    "homemade",
+    "horny",
+    "hotel",
+    "hub",
+    "interracial",
+    "italian",
+    "japan",
+    "japanese",
+    "kinky",
+    "latina",
+    "lesbian",
+    "lingerie",
+    "lofi",
+    "mature",
+    "milf",
+    "mom",
+    "mommy",
+    "naked",
+    "naughty",
+    "nude",
+    "nudist",
+    "orgasm",
+    "orgy",
+    "panties",
+    "pegging",
+    "petite",
+    "piss",
+    "porn",
+    "porno",
+    "pornstar",
+    "public",
+    "pussy",
+    "real",
+    "redhead",
+    "rough",
+    "russian",
+    "sensual",
+    "sex",
+    "sexy",
+    "shaved",
+    "slut",
+    "solo",
+    "spanking",
+    "squirting",
+    "stepbro",
+    "stepdad",
+    "stepmom",
+    "stepsis",
+    "strapon",
+    "strip",
+    "stripper",
+    "striptease",
+    "submission",
+    "swallow",
+    "swinger",
+    "teen",
+    "teens",
+    "tease",
+    "thai",
+    "threesome",
+    "tight",
+    "toys",
+    "tranny",
+    "tugjob",
+    "tube",
+    "twerk",
+    "twink",
+    "upskirt",
+    "vintage",
+    "virgin",
+    "voyeur",
+    "webcam",
+    "wife",
+    "x",
+    "xxx"
+  ]
+};
+
+// src/dict/objects/clothing.json
+var clothing_default = {
+  description: "List of clothing types",
+  clothes: [
+    "belt",
+    "bikini",
+    "blazer",
+    "blouse",
+    "boots",
+    "bowtie",
+    "boxers",
+    "bra",
+    "briefs",
+    "camisole",
+    "cap",
+    "cardigan",
+    "cargos",
+    "coat",
+    "corset",
+    "dress",
+    "fleece",
+    "gloves",
+    "hat",
+    "hoody",
+    "jacket",
+    "jeans",
+    "jumper",
+    "kaftan",
+    "kilt",
+    "knickers",
+    "kurta",
+    "lingerie",
+    "nightgown",
+    "nightwear",
+    "pants",
+    "poncho",
+    "raincoat",
+    "robe",
+    "romper",
+    "sandals",
+    "sarong",
+    "scarf",
+    "shawl",
+    "shirt",
+    "shoes",
+    "shorts",
+    "skirt",
+    "slacks",
+    "slippers",
+    "socks",
+    "stockings",
+    "suit",
+    "sunglasses",
+    "sweater",
+    "sweatshirt",
+    "swimwear",
+    "t-shirt",
+    "tailcoat",
+    "tankini",
+    "thong",
+    "tie",
+    "tights",
+    "top",
+    "tracksuit",
+    "trainers",
+    "trousers",
+    "underpants",
+    "undershirt",
+    "underwear",
+    "vest",
+    "waistcoat",
+    "waterproof",
+    "zip"
+  ]
+};
+
+// src/dict/objects/containers.json
+var containers_default = {
+  description: "List of objects that can contain other objects",
+  containers: [
+    "bag",
+    "balloon",
+    "barrel",
+    "beaker",
+    "bottle",
+    "bowl",
+    "box",
+    "bucket",
+    "briefcase",
+    "cabinet",
+    "can",
+    "case",
+    "chest",
+    "cup",
+    "display",
+    "drawer",
+    "flask",
+    "glass",
+    "jar",
+    "mug",
+    "pouch",
+    "purse",
+    "tray",
+    "trunk",
+    "tube",
+    "vase",
+    "wallet"
+  ]
+};
+
+// src/dict/words/adverbs.json
+var adverbs_default = {
+  adverbs: [
+    "abnormally",
+    "absentmindedly",
+    "accidentally",
+    "acidly",
+    "actually",
+    "adventurously",
+    "afterwards",
+    "almost",
+    "always",
+    "angrily",
+    "annually",
+    "anxiously",
+    "arrogantly",
+    "awkwardly",
+    "badly",
+    "bashfully",
+    "beautifully",
+    "bitterly",
+    "bleakly",
+    "blindly",
+    "blissfully",
+    "boastfully",
+    "boldly",
+    "bravely",
+    "briefly",
+    "brightly",
+    "briskly",
+    "broadly",
+    "busily",
+    "calmly",
+    "carefully",
+    "carelessly",
+    "cautiously",
+    "certainly",
+    "cheerfully",
+    "clearly",
+    "cleverly",
+    "closely",
+    "coaxingly",
+    "colorfully",
+    "commonly",
+    "continually",
+    "coolly",
+    "correctly",
+    "courageously",
+    "crossly",
+    "cruelly",
+    "curiously",
+    "daily",
+    "daintily",
+    "dearly",
+    "deceivingly",
+    "deeply",
+    "defiantly",
+    "deliberately",
+    "delightfully",
+    "diligently",
+    "dimly",
+    "doubtfully",
+    "dreamily",
+    "easily",
+    "elegantly",
+    "energetically",
+    "enormously",
+    "enthusiastically",
+    "equally",
+    "especially",
+    "even",
+    "evenly",
+    "eventually",
+    "exactly",
+    "excitedly",
+    "extremely",
+    "fairly",
+    "faithfully",
+    "famously",
+    "far",
+    "fast",
+    "fatally",
+    "ferociously",
+    "fervently",
+    "fiercely",
+    "fondly",
+    "foolishly",
+    "fortunately",
+    "frankly",
+    "frantically",
+    "freely",
+    "frenetically",
+    "frightfully",
+    "fully",
+    "furiously",
+    "generally",
+    "generously",
+    "gently",
+    "gladly",
+    "gleefully",
+    "gracefully",
+    "gratefully",
+    "greatly",
+    "greedily",
+    "happily",
+    "hastily",
+    "healthily",
+    "heavily",
+    "helpfully",
+    "helplessly",
+    "highly",
+    "honestly",
+    "hopelessly",
+    "hourly",
+    "hungrily",
+    "immediately",
+    "innocently",
+    "inquisitively",
+    "instantly",
+    "intensely",
+    "intently",
+    "interestingly",
+    "inwardly",
+    "irritably",
+    "jaggedly",
+    "jealously",
+    "joshingly",
+    "jovially",
+    "joyfully",
+    "joyously",
+    "jubilantly",
+    "judgementally",
+    "justly",
+    "keenly",
+    "kiddingly",
+    "kindheartedly",
+    "kindly",
+    "kissingly",
+    "knavishly",
+    "knottily",
+    "knowingly",
+    "knowledgeably",
+    "kookily",
+    "lazily",
+    "less",
+    "lightly",
+    "likely",
+    "limply",
+    "lively",
+    "loftily",
+    "longingly",
+    "loosely",
+    "loudly",
+    "lovingly",
+    "loyally",
+    "madly",
+    "majestically",
+    "meaningfully",
+    "mechanically",
+    "merrily",
+    "miserably",
+    "mockingly",
+    "monthly",
+    "more",
+    "mortally",
+    "mostly",
+    "mysteriously",
+    "naturally",
+    "nearly",
+    "neatly",
+    "needily",
+    "nervously",
+    "never",
+    "nicely",
+    "noisily",
+    "not",
+    "obediently",
+    "obnoxiously",
+    "oddly",
+    "offensively",
+    "officially",
+    "often",
+    "only",
+    "openly",
+    "optimistically",
+    "overconfidently",
+    "owlishly",
+    "painfully",
+    "partially",
+    "patiently",
+    "perfectly",
+    "physically",
+    "playfully",
+    "politely",
+    "poorly",
+    "positively",
+    "potentially",
+    "powerfully",
+    "promptly",
+    "properly",
+    "punctually",
+    "quaintly",
+    "quarrelsomely",
+    "queasily",
+    "queerly",
+    "questionably",
+    "questioningly",
+    "quicker",
+    "quickly",
+    "quietly",
+    "quirkily",
+    "quizzically",
+    "rapidly",
+    "rarely",
+    "readily",
+    "really",
+    "reassuringly",
+    "recklessly",
+    "regularly",
+    "reluctantly",
+    "repeatedly",
+    "reproachfully",
+    "restfully",
+    "righteously",
+    "rightfully",
+    "rigidly",
+    "roughly",
+    "rudely",
+    "sadly",
+    "safely",
+    "scarcely",
+    "scarily",
+    "searchingly",
+    "sedately",
+    "seemingly",
+    "seldom",
+    "selfishly",
+    "separately",
+    "seriously",
+    "shakily",
+    "sharply",
+    "sheepishly",
+    "shrilly",
+    "shyly",
+    "silently",
+    "sleepily",
+    "slowly",
+    "smoothly",
+    "softly",
+    "solemnly",
+    "solidly",
+    "sometimes",
+    "soon",
+    "speedily",
+    "stealthily",
+    "sternly",
+    "strictly",
+    "successfully",
+    "suddenly",
+    "surprisingly",
+    "suspiciously",
+    "sweetly",
+    "swiftly",
+    "sympathetically",
+    "tenderly",
+    "tensely",
+    "terribly",
+    "thankfully",
+    "thoroughly",
+    "thoughtfully",
+    "tightly",
+    "tomorrow",
+    "too",
+    "tremendously",
+    "triumphantly",
+    "truly",
+    "truthfully",
+    "ultimately",
+    "unabashedly",
+    "unaccountably",
+    "unbearably",
+    "unethically",
+    "unexpectedly",
+    "unfortunately",
+    "unimpressively",
+    "unnaturally",
+    "unnecessarily",
+    "upbeat",
+    "upliftingly",
+    "upright",
+    "upside-down",
+    "upward",
+    "upwardly",
+    "urgently",
+    "usefully",
+    "uselessly",
+    "usually",
+    "utterly",
+    "vacantly",
+    "vaguely",
+    "vainly",
+    "valiantly",
+    "vastly",
+    "verbally",
+    "very",
+    "viciously",
+    "victoriously",
+    "violently",
+    "vivaciously",
+    "voluntarily",
+    "warmly",
+    "weakly",
+    "wearily",
+    "well",
+    "wetly",
+    "wholly",
+    "wildly",
+    "willfully",
+    "wisely",
+    "woefully",
+    "wonderfully",
+    "worriedly",
+    "wrongly",
+    "yawningly",
+    "yearly",
+    "yearningly",
+    "yesterday",
+    "yieldingly",
+    "youthfully"
+  ]
+};
+
+// src/dict/words/common.json
+var common_default = {
+  description: "Common English words.",
+  commonWords: [
+    "a",
+    "able",
+    "about",
+    "absolute",
+    "accept",
+    "account",
+    "achieve",
+    "across",
+    "act",
+    "active",
+    "actual",
+    "add",
+    "address",
+    "admit",
+    "advertise",
+    "affect",
+    "afford",
+    "after",
+    "afternoon",
+    "again",
+    "against",
+    "age",
+    "agent",
+    "ago",
+    "agree",
+    "air",
+    "all",
+    "allow",
+    "almost",
+    "along",
+    "already",
+    "alright",
+    "also",
+    "although",
+    "always",
+    "america",
+    "amount",
+    "and",
+    "another",
+    "answer",
+    "any",
+    "apart",
+    "apparent",
+    "appear",
+    "apply",
+    "appoint",
+    "approach",
+    "appropriate",
+    "area",
+    "argue",
+    "arm",
+    "around",
+    "arrange",
+    "art",
+    "as",
+    "ask",
+    "associate",
+    "assume",
+    "at",
+    "attend",
+    "authority",
+    "available",
+    "aware",
+    "away",
+    "awful",
+    "baby",
+    "back",
+    "bad",
+    "bag",
+    "balance",
+    "ball",
+    "bank",
+    "bar",
+    "base",
+    "basis",
+    "be",
+    "bear",
+    "beat",
+    "beauty",
+    "because",
+    "become",
+    "bed",
+    "before",
+    "begin",
+    "behind",
+    "believe",
+    "benefit",
+    "best",
+    "bet",
+    "between",
+    "big",
+    "bill",
+    "birth",
+    "bit",
+    "black",
+    "bloke",
+    "blood",
+    "blow",
+    "blue",
+    "board",
+    "boat",
+    "body",
+    "book",
+    "both",
+    "bother",
+    "bottle",
+    "bottom",
+    "box",
+    "boy",
+    "break",
+    "brief",
+    "brilliant",
+    "bring",
+    "britain",
+    "brother",
+    "budget",
+    "build",
+    "bus",
+    "business",
+    "busy",
+    "but",
+    "buy",
+    "by",
+    "cake",
+    "call",
+    "can",
+    "car",
+    "card",
+    "care",
+    "carry",
+    "case",
+    "cat",
+    "catch",
+    "cause",
+    "cent",
+    "centre",
+    "certain",
+    "chair",
+    "chairman",
+    "chance",
+    "change",
+    "chap",
+    "character",
+    "charge",
+    "cheap",
+    "check",
+    "child",
+    "choice",
+    "choose",
+    "Christ",
+    "Christmas",
+    "church",
+    "city",
+    "claim",
+    "class",
+    "clean",
+    "clear",
+    "client",
+    "clock",
+    "close",
+    "closes",
+    "clothe",
+    "club",
+    "coffee",
+    "cold",
+    "colleague",
+    "collect",
+    "college",
+    "colour",
+    "come",
+    "comment",
+    "commit",
+    "committee",
+    "common",
+    "community",
+    "company",
+    "compare",
+    "complete",
+    "compute",
+    "concern",
+    "condition",
+    "confer",
+    "consider",
+    "consult",
+    "contact",
+    "continue",
+    "contract",
+    "control",
+    "converse",
+    "cook",
+    "copy",
+    "corner",
+    "correct",
+    "cost",
+    "could",
+    "council",
+    "count",
+    "country",
+    "county",
+    "couple",
+    "course",
+    "court",
+    "cover",
+    "create",
+    "cross",
+    "cup",
+    "current",
+    "cut",
+    "dad",
+    "danger",
+    "date",
+    "day",
+    "dead",
+    "deal",
+    "dear",
+    "debate",
+    "decide",
+    "decision",
+    "deep",
+    "definite",
+    "degree",
+    "department",
+    "depend",
+    "describe",
+    "design",
+    "detail",
+    "develop",
+    "die",
+    "difference",
+    "difficult",
+    "dinner",
+    "direct",
+    "discuss",
+    "district",
+    "divide",
+    "do",
+    "doctor",
+    "document",
+    "dog",
+    "door",
+    "double",
+    "doubt",
+    "down",
+    "draw",
+    "dress",
+    "drink",
+    "drive",
+    "drop",
+    "dry",
+    "due",
+    "during",
+    "each",
+    "early",
+    "east",
+    "easy",
+    "eat",
+    "economy",
+    "educate",
+    "effect",
+    "egg",
+    "eight",
+    "either",
+    "elect",
+    "electric",
+    "eleven",
+    "else",
+    "employ",
+    "encourage",
+    "end",
+    "engine",
+    "english",
+    "enjoy",
+    "enough",
+    "enter",
+    "environment",
+    "equal",
+    "especial",
+    "europe",
+    "even",
+    "evening",
+    "ever",
+    "every",
+    "evidence",
+    "exact",
+    "example",
+    "except",
+    "excuse",
+    "exercise",
+    "exist",
+    "expect",
+    "expense",
+    "experience",
+    "explain",
+    "express",
+    "extra",
+    "eye",
+    "face",
+    "fact",
+    "fair",
+    "fall",
+    "family",
+    "far",
+    "farm",
+    "fast",
+    "father",
+    "favour",
+    "feed",
+    "feel",
+    "few",
+    "field",
+    "fight",
+    "figure",
+    "file",
+    "fill",
+    "film",
+    "final",
+    "finance",
+    "find",
+    "fine",
+    "finish",
+    "fire",
+    "first",
+    "fish",
+    "fit",
+    "five",
+    "flat",
+    "floor",
+    "fly",
+    "follow",
+    "food",
+    "foot",
+    "for",
+    "force",
+    "forget",
+    "form",
+    "fortune",
+    "forward",
+    "four",
+    "france",
+    "free",
+    "friday",
+    "friend",
+    "from",
+    "front",
+    "full",
+    "fun",
+    "function",
+    "fund",
+    "further",
+    "future",
+    "game",
+    "garden",
+    "gas",
+    "general",
+    "germany",
+    "get",
+    "girl",
+    "give",
+    "glass",
+    "go",
+    "god",
+    "good",
+    "goodbye",
+    "govern",
+    "grand",
+    "grant",
+    "great",
+    "green",
+    "ground",
+    "group",
+    "grow",
+    "guess",
+    "guy",
+    "hair",
+    "half",
+    "hall",
+    "hand",
+    "hang",
+    "happen",
+    "happy",
+    "hard",
+    "hate",
+    "have",
+    "he",
+    "head",
+    "health",
+    "hear",
+    "heart",
+    "heat",
+    "heavy",
+    "hell",
+    "help",
+    "here",
+    "high",
+    "history",
+    "hit",
+    "hold",
+    "holiday",
+    "home",
+    "honest",
+    "hope",
+    "horse",
+    "hospital",
+    "hot",
+    "hour",
+    "house",
+    "how",
+    "however",
+    "hullo",
+    "hundred",
+    "husband",
+    "idea",
+    "identify",
+    "if",
+    "imagine",
+    "important",
+    "improve",
+    "in",
+    "include",
+    "income",
+    "increase",
+    "indeed",
+    "individual",
+    "industry",
+    "inform",
+    "inside",
+    "instead",
+    "insure",
+    "interest",
+    "into",
+    "introduce",
+    "invest",
+    "involve",
+    "issue",
+    "it",
+    "item",
+    "jesus",
+    "job",
+    "join",
+    "judge",
+    "jump",
+    "just",
+    "keep",
+    "key",
+    "kid",
+    "kill",
+    "kind",
+    "king",
+    "kitchen",
+    "knock",
+    "know",
+    "labour",
+    "lad",
+    "lady",
+    "land",
+    "language",
+    "large",
+    "last",
+    "late",
+    "laugh",
+    "law",
+    "lay",
+    "lead",
+    "learn",
+    "leave",
+    "left",
+    "leg",
+    "less",
+    "let",
+    "letter",
+    "level",
+    "lie",
+    "life",
+    "light",
+    "like",
+    "likely",
+    "limit",
+    "line",
+    "link",
+    "list",
+    "listen",
+    "little",
+    "live",
+    "load",
+    "local",
+    "lock",
+    "london",
+    "long",
+    "look",
+    "lord",
+    "lose",
+    "lot",
+    "love",
+    "low",
+    "luck",
+    "lunch",
+    "machine",
+    "main",
+    "major",
+    "make",
+    "man",
+    "manage",
+    "many",
+    "mark",
+    "market",
+    "marry",
+    "match",
+    "matter",
+    "may",
+    "maybe",
+    "mean",
+    "meaning",
+    "measure",
+    "meet",
+    "member",
+    "mention",
+    "middle",
+    "might",
+    "mile",
+    "milk",
+    "million",
+    "mind",
+    "minister",
+    "minus",
+    "minute",
+    "miss",
+    "mister",
+    "moment",
+    "monday",
+    "money",
+    "month",
+    "more",
+    "morning",
+    "most",
+    "mother",
+    "motion",
+    "move",
+    "mrs",
+    "much",
+    "music",
+    "must",
+    "name",
+    "nation",
+    "nature",
+    "near",
+    "necessary",
+    "need",
+    "never",
+    "new",
+    "news",
+    "next",
+    "nice",
+    "night",
+    "nine",
+    "no",
+    "non",
+    "none",
+    "normal",
+    "north",
+    "not",
+    "note",
+    "notice",
+    "now",
+    "number",
+    "obvious",
+    "occasion",
+    "odd",
+    "of",
+    "off",
+    "offer",
+    "office",
+    "often",
+    "okay",
+    "old",
+    "on",
+    "once",
+    "one",
+    "only",
+    "open",
+    "operate",
+    "opportunity",
+    "oppose",
+    "or",
+    "order",
+    "organize",
+    "original",
+    "other",
+    "otherwise",
+    "ought",
+    "out",
+    "over",
+    "own",
+    "pack",
+    "page",
+    "paint",
+    "pair",
+    "paper",
+    "paragraph",
+    "pardon",
+    "parent",
+    "park",
+    "part",
+    "particular",
+    "party",
+    "pass",
+    "past",
+    "pay",
+    "pence",
+    "pension",
+    "people",
+    "per",
+    "percent",
+    "perfect",
+    "perhaps",
+    "period",
+    "person",
+    "photograph",
+    "pick",
+    "picture",
+    "piece",
+    "place",
+    "plan",
+    "play",
+    "please",
+    "plus",
+    "point",
+    "police",
+    "policy",
+    "politic",
+    "poor",
+    "position",
+    "positive",
+    "possible",
+    "post",
+    "pound",
+    "power",
+    "practise",
+    "prepare",
+    "present",
+    "press",
+    "pressure",
+    "presume",
+    "pretty",
+    "previous",
+    "price",
+    "print",
+    "private",
+    "probable",
+    "problem",
+    "proceed",
+    "process",
+    "produce",
+    "product",
+    "programme",
+    "project",
+    "proper",
+    "propose",
+    "protect",
+    "provide",
+    "public",
+    "pull",
+    "purpose",
+    "push",
+    "put",
+    "quality",
+    "quarter",
+    "question",
+    "quick",
+    "quid",
+    "quiet",
+    "quite",
+    "radio",
+    "rail",
+    "raise",
+    "range",
+    "rate",
+    "rather",
+    "read",
+    "ready",
+    "real",
+    "realise",
+    "really",
+    "reason",
+    "receive",
+    "recent",
+    "reckon",
+    "recognize",
+    "recommend",
+    "record",
+    "red",
+    "reduce",
+    "refer",
+    "regard",
+    "region",
+    "relation",
+    "remember",
+    "report",
+    "represent",
+    "require",
+    "research",
+    "resource",
+    "respect",
+    "responsible",
+    "rest",
+    "result",
+    "return",
+    "rid",
+    "right",
+    "ring",
+    "rise",
+    "road",
+    "role",
+    "roll",
+    "room",
+    "round",
+    "rule",
+    "run",
+    "safe",
+    "sale",
+    "same",
+    "saturday",
+    "save",
+    "say",
+    "scheme",
+    "school",
+    "science",
+    "score",
+    "scotland",
+    "seat",
+    "second",
+    "secretary",
+    "section",
+    "secure",
+    "see",
+    "seem",
+    "self",
+    "sell",
+    "send",
+    "sense",
+    "separate",
+    "serious",
+    "serve",
+    "service",
+    "set",
+    "settle",
+    "seven",
+    "sex",
+    "shall",
+    "share",
+    "she",
+    "sheet",
+    "shoe",
+    "shoot",
+    "shop",
+    "short",
+    "should",
+    "show",
+    "shut",
+    "sick",
+    "side",
+    "sign",
+    "similar",
+    "simple",
+    "since",
+    "sing",
+    "single",
+    "sir",
+    "sister",
+    "sit",
+    "site",
+    "situate",
+    "six",
+    "size",
+    "sleep",
+    "slight",
+    "slow",
+    "small",
+    "smoke",
+    "so",
+    "social",
+    "society",
+    "some",
+    "son",
+    "soon",
+    "sorry",
+    "sort",
+    "sound",
+    "south",
+    "space",
+    "speak",
+    "special",
+    "specific",
+    "speed",
+    "spell",
+    "spend",
+    "square",
+    "staff",
+    "stage",
+    "stairs",
+    "stand",
+    "standard",
+    "start",
+    "state",
+    "station",
+    "stay",
+    "step",
+    "stick",
+    "still",
+    "stop",
+    "story",
+    "straight",
+    "strategy",
+    "street",
+    "strike",
+    "strong",
+    "structure",
+    "student",
+    "study",
+    "stuff",
+    "stupid",
+    "subject",
+    "succeed",
+    "such",
+    "sudden",
+    "suggest",
+    "suit",
+    "summer",
+    "sun",
+    "sunday",
+    "supply",
+    "support",
+    "suppose",
+    "sure",
+    "surprise",
+    "switch",
+    "system",
+    "table",
+    "take",
+    "talk",
+    "tape",
+    "tax",
+    "tea",
+    "teach",
+    "team",
+    "telephone",
+    "television",
+    "tell",
+    "ten",
+    "tend",
+    "term",
+    "terrible",
+    "test",
+    "than",
+    "thank",
+    "the",
+    "then",
+    "there",
+    "therefore",
+    "they",
+    "thing",
+    "think",
+    "thirteen",
+    "thirty",
+    "this",
+    "thou",
+    "though",
+    "thousand",
+    "three",
+    "through",
+    "throw",
+    "thursday",
+    "tie",
+    "time",
+    "to",
+    "today",
+    "together",
+    "tomorrow",
+    "tonight",
+    "too",
+    "top",
+    "total",
+    "touch",
+    "toward",
+    "town",
+    "trade",
+    "traffic",
+    "train",
+    "transport",
+    "travel",
+    "treat",
+    "tree",
+    "trouble",
+    "true",
+    "trust",
+    "try",
+    "tuesday",
+    "turn",
+    "twelve",
+    "twenty",
+    "two",
+    "type",
+    "under",
+    "understand",
+    "union",
+    "unit",
+    "unite",
+    "university",
+    "unless",
+    "until",
+    "up",
+    "upon",
+    "use",
+    "usual",
+    "value",
+    "various",
+    "very",
+    "video",
+    "view",
+    "village",
+    "visit",
+    "vote",
+    "wage",
+    "wait",
+    "walk",
+    "wall",
+    "want",
+    "war",
+    "warm",
+    "wash",
+    "waste",
+    "watch",
+    "water",
+    "way",
+    "we",
+    "wear",
+    "wednesday",
+    "wee",
+    "week",
+    "weigh",
+    "welcome",
+    "well",
+    "west",
+    "what",
+    "when",
+    "where",
+    "whether",
+    "which",
+    "while",
+    "white",
+    "who",
+    "whole",
+    "why",
+    "wide",
+    "wife",
+    "will",
+    "win",
+    "wind",
+    "window",
+    "wish",
+    "with",
+    "within",
+    "without",
+    "woman",
+    "wonder",
+    "wood",
+    "word",
+    "work",
+    "world",
+    "worry",
+    "worse",
+    "worth",
+    "would",
+    "write",
+    "wrong",
+    "year",
+    "yes",
+    "yesterday",
+    "yet",
+    "you",
+    "young"
+  ]
+};
+
+// src/dict/words/nouns.json
+var nouns_default = {
+  description: "A list of English nouns.",
+  nouns: [
+    "Armour",
+    "Barrymore",
+    "Cabot",
+    "Catholicism",
+    "Chihuahua",
+    "Christianity",
+    "Easter",
+    "Frenchman",
+    "Lowry",
+    "Mayer",
+    "Orientalism",
+    "Pharaoh",
+    "Pueblo",
+    "Pullman",
+    "Rodeo",
+    "Saturday",
+    "Sister",
+    "Snead",
+    "Syrah",
+    "Tuesday",
+    "Woodward",
+    "abbey",
+    "absence",
+    "absorption",
+    "abstinence",
+    "absurdity",
+    "abundance",
+    "acceptance",
+    "accessibility",
+    "accommodation",
+    "accomplice",
+    "accountability",
+    "accounting",
+    "accreditation",
+    "accuracy",
+    "acquiescence",
+    "acreage",
+    "actress",
+    "actuality",
+    "adage",
+    "adaptation",
+    "adherence",
+    "adjustment",
+    "adoption",
+    "adultery",
+    "advancement",
+    "advert",
+    "advertisement",
+    "advertising",
+    "advice",
+    "aesthetics",
+    "affinity",
+    "aggression",
+    "agriculture",
+    "aircraft",
+    "airtime",
+    "allegation",
+    "allegiance",
+    "allegory",
+    "allergy",
+    "allies",
+    "alligator",
+    "allocation",
+    "allotment",
+    "altercation",
+    "ambulance",
+    "ammonia",
+    "anatomy",
+    "anemia",
+    "ankle",
+    "announcement",
+    "annoyance",
+    "annuity",
+    "anomaly",
+    "anthropology",
+    "anxiety",
+    "apartheid",
+    "apologise",
+    "apostle",
+    "apparatus",
+    "appeasement",
+    "appellation",
+    "appendix",
+    "applause",
+    "appointment",
+    "appraisal",
+    "archery",
+    "archipelago",
+    "architecture",
+    "ardor",
+    "arrears",
+    "arrow",
+    "artisan",
+    "artistry",
+    "ascent",
+    "assembly",
+    "assignment",
+    "association",
+    "asthma",
+    "atheism",
+    "attacker",
+    "attraction",
+    "attractiveness",
+    "auspices",
+    "authority",
+    "avarice",
+    "aversion",
+    "aviation",
+    "babbling",
+    "backlash",
+    "baker",
+    "ballet",
+    "balls",
+    "banjo",
+    "baron",
+    "barrier",
+    "barrister",
+    "bases",
+    "basin",
+    "basis",
+    "battery",
+    "battling",
+    "bedtime",
+    "beginner",
+    "begun",
+    "bending",
+    "bicycle",
+    "billing",
+    "bingo",
+    "biography",
+    "biology",
+    "birthplace",
+    "blackberry",
+    "blather",
+    "blossom",
+    "boardroom",
+    "boasting",
+    "bodyguard",
+    "boldness",
+    "bomber",
+    "bondage",
+    "bonding",
+    "bones",
+    "bonus",
+    "bookmark",
+    "boomer",
+    "booty",
+    "bounds",
+    "bowling",
+    "brainstorming",
+    "breadth",
+    "breaker",
+    "brewer",
+    "brightness",
+    "broccoli",
+    "broth",
+    "brotherhood",
+    "browsing",
+    "brunch",
+    "brunt",
+    "building",
+    "bullion",
+    "bureaucracy",
+    "burglary",
+    "buyout",
+    "by-election",
+    "cabal",
+    "cabbage",
+    "calamity",
+    "campaign",
+    "canonization",
+    "captaincy",
+    "carcass",
+    "carrier",
+    "cartridge",
+    "cassette",
+    "catfish",
+    "caught",
+    "celebrity",
+    "cemetery",
+    "certainty",
+    "certification",
+    "charade",
+    "chasm",
+    "check-in",
+    "cheerleader",
+    "cheesecake",
+    "chemotherapy",
+    "chili",
+    "china",
+    "chivalry",
+    "cholera",
+    "cilantro",
+    "circus",
+    "civilisation",
+    "civility",
+    "clearance",
+    "clearing",
+    "clerk",
+    "climber",
+    "closeness",
+    "clothing",
+    "clutches",
+    "coaster",
+    "coconut",
+    "coding",
+    "collaborator",
+    "colleague",
+    "college",
+    "collision",
+    "colors",
+    "combustion",
+    "comedian",
+    "comer",
+    "commander",
+    "commemoration",
+    "commenter",
+    "commissioner",
+    "commune",
+    "competition",
+    "completeness",
+    "complexity",
+    "computing",
+    "comrade",
+    "concur",
+    "condominium",
+    "conduit",
+    "confidant",
+    "configuration",
+    "confiscation",
+    "conflagration",
+    "conflict",
+    "consist",
+    "consistency",
+    "consolidation",
+    "conspiracy",
+    "constable",
+    "consul",
+    "consultancy",
+    "contentment",
+    "contents",
+    "contractor",
+    "conversation",
+    "cornerstone",
+    "corpus",
+    "correlation",
+    "councilman",
+    "counselor",
+    "countdown",
+    "countryman",
+    "coverage",
+    "covering",
+    "coyote",
+    "cracker",
+    "creator",
+    "criminality",
+    "crocodile",
+    "cropping",
+    "cross-examination",
+    "crossover",
+    "crossroads",
+    "culprit",
+    "cumin",
+    "curator",
+    "curfew",
+    "cursor",
+    "custard",
+    "cutter",
+    "cyclist",
+    "cyclone",
+    "cylinder",
+    "cynicism",
+    "daddy",
+    "damsel",
+    "darkness",
+    "dawning",
+    "daybreak",
+    "dealing",
+    "dedication",
+    "deduction",
+    "defection",
+    "deference",
+    "deficiency",
+    "definition",
+    "deflation",
+    "degeneration",
+    "delegation",
+    "delicacy",
+    "delirium",
+    "deliverance",
+    "demeanor",
+    "demon",
+    "demonstration",
+    "denomination",
+    "dentist",
+    "departure",
+    "depletion",
+    "depression",
+    "designation",
+    "despotism",
+    "detention",
+    "developer",
+    "devolution",
+    "dexterity",
+    "diagnosis",
+    "dialect",
+    "differentiation",
+    "digger",
+    "digress",
+    "dioxide",
+    "diploma",
+    "disability",
+    "disarmament",
+    "discord",
+    "discovery",
+    "dishonesty",
+    "dismissal",
+    "disobedience",
+    "dispatcher",
+    "disservice",
+    "distribution",
+    "distributor",
+    "diver",
+    "diversity",
+    "docking",
+    "dollar",
+    "dominance",
+    "domination",
+    "dominion",
+    "donkey",
+    "doorstep",
+    "doorway",
+    "dossier",
+    "downside",
+    "drafting",
+    "drank",
+    "drilling",
+    "driver",
+    "drumming",
+    "drunkenness",
+    "duchess",
+    "ducking",
+    "dugout",
+    "dumps",
+    "dwelling",
+    "dynamics",
+    "eagerness",
+    "earnestness",
+    "earnings",
+    "eater",
+    "editor",
+    "effectiveness",
+    "electricity",
+    "elements",
+    "eloquence",
+    "emancipation",
+    "embodiment",
+    "embroidery",
+    "emperor",
+    "employment",
+    "encampment",
+    "enclosure",
+    "encouragement",
+    "endangerment",
+    "enlightenment",
+    "enthusiasm",
+    "environment",
+    "environs",
+    "envoy",
+    "epilepsy",
+    "equation",
+    "equator",
+    "error",
+    "espionage",
+    "estimation",
+    "evacuation",
+    "exaggeration",
+    "examination",
+    "exclamation",
+    "expediency",
+    "exploitation",
+    "extinction",
+    "eyewitness",
+    "falls",
+    "fascism",
+    "fastball",
+    "feces",
+    "feedback",
+    "ferocity",
+    "fertilization",
+    "fetish",
+    "finale",
+    "firing",
+    "fixing",
+    "flashing",
+    "flask",
+    "flora",
+    "fluke",
+    "folklore",
+    "follower",
+    "foothold",
+    "footing",
+    "forefinger",
+    "forefront",
+    "forgiveness",
+    "formality",
+    "formation",
+    "formula",
+    "foyer",
+    "fragmentation",
+    "framework",
+    "fraud",
+    "freestyle",
+    "frequency",
+    "friendliness",
+    "fries",
+    "frigate",
+    "fulfillment",
+    "function",
+    "functionality",
+    "fundraiser",
+    "fusion",
+    "futility",
+    "gallantry",
+    "gallery",
+    "genesis",
+    "genitals",
+    "girlfriend",
+    "glamour",
+    "glitter",
+    "glucose",
+    "google",
+    "grandeur",
+    "grappling",
+    "greens",
+    "gridlock",
+    "grocer",
+    "groundwork",
+    "grouping",
+    "gunman",
+    "gusto",
+    "habitation",
+    "hacker",
+    "hallway",
+    "hamburger",
+    "hammock",
+    "handling",
+    "hands",
+    "handshake",
+    "happiness",
+    "hardship",
+    "headcount",
+    "header",
+    "headquarters",
+    "heads",
+    "headset",
+    "hearth",
+    "hearts",
+    "heath",
+    "hegemony",
+    "height",
+    "hello",
+    "helper",
+    "helping",
+    "helplessness",
+    "hierarchy",
+    "hoarding",
+    "hockey",
+    "homeland",
+    "homer",
+    "honesty",
+    "horror",
+    "horseman",
+    "hostility",
+    "housing",
+    "humility",
+    "hurricane",
+    "iceberg",
+    "ignition",
+    "illness",
+    "illustration",
+    "illustrator",
+    "immunity",
+    "immunization",
+    "imperialism",
+    "imprisonment",
+    "inaccuracy",
+    "inaction",
+    "inactivity",
+    "inauguration",
+    "indecency",
+    "indicator",
+    "inevitability",
+    "infamy",
+    "infiltration",
+    "influx",
+    "iniquity",
+    "innocence",
+    "innovation",
+    "insanity",
+    "inspiration",
+    "instruction",
+    "instructor",
+    "insurer",
+    "interact",
+    "intercession",
+    "intercourse",
+    "intermission",
+    "interpretation",
+    "intersection",
+    "interval",
+    "intolerance",
+    "intruder",
+    "invasion",
+    "investment",
+    "involvement",
+    "irrigation",
+    "iteration",
+    "jenny",
+    "jogging",
+    "jones",
+    "joseph",
+    "juggernaut",
+    "juncture",
+    "jurisprudence",
+    "juror",
+    "kangaroo",
+    "kingdom",
+    "knocking",
+    "laborer",
+    "larceny",
+    "laurels",
+    "layout",
+    "leadership",
+    "leasing",
+    "legislation",
+    "leopard",
+    "liberation",
+    "licence",
+    "lifeblood",
+    "lifeline",
+    "ligament",
+    "lighting",
+    "likeness",
+    "line-up",
+    "lineage",
+    "liner",
+    "lineup",
+    "liquidation",
+    "listener",
+    "literature",
+    "litigation",
+    "litre",
+    "loathing",
+    "locality",
+    "lodging",
+    "logic",
+    "longevity",
+    "lookout",
+    "lordship",
+    "lustre",
+    "ma'am",
+    "machinery",
+    "madness",
+    "magnificence",
+    "mahogany",
+    "mailing",
+    "mainframe",
+    "maintenance",
+    "majority",
+    "manga",
+    "mango",
+    "manifesto",
+    "mantra",
+    "manufacturer",
+    "maple",
+    "martin",
+    "martyrdom",
+    "mathematician",
+    "matrix",
+    "matron",
+    "mayhem",
+    "mayor",
+    "means",
+    "meantime",
+    "measurement",
+    "mechanics",
+    "mediator",
+    "medics",
+    "melodrama",
+    "memory",
+    "mentality",
+    "metaphysics",
+    "method",
+    "metre",
+    "miner",
+    "mirth",
+    "misconception",
+    "misery",
+    "mishap",
+    "misunderstanding",
+    "mobility",
+    "molasses",
+    "momentum",
+    "monarchy",
+    "monument",
+    "morale",
+    "mortality",
+    "motto",
+    "mouthful",
+    "mouthpiece",
+    "mover",
+    "movie",
+    "mowing",
+    "murderer",
+    "musician",
+    "mutation",
+    "mythology",
+    "narration",
+    "narrator",
+    "nationality",
+    "negligence",
+    "neighborhood",
+    "neighbour",
+    "nervousness",
+    "networking",
+    "nexus",
+    "nightmare",
+    "nobility",
+    "nobody",
+    "noodle",
+    "normalcy",
+    "notification",
+    "nourishment",
+    "novella",
+    "nucleus",
+    "nuisance",
+    "nursery",
+    "nutrition",
+    "nylon",
+    "oasis",
+    "obscenity",
+    "obscurity",
+    "observer",
+    "offense",
+    "onslaught",
+    "operation",
+    "opportunity",
+    "opposition",
+    "oracle",
+    "orchestra",
+    "organisation",
+    "organizer",
+    "orientation",
+    "originality",
+    "ounce",
+    "outage",
+    "outcome",
+    "outdoors",
+    "outfield",
+    "outing",
+    "outpost",
+    "outset",
+    "overseer",
+    "owner",
+    "oxygen",
+    "pairing",
+    "panther",
+    "paradox",
+    "parliament",
+    "parsley",
+    "parson",
+    "passenger",
+    "pasta",
+    "patchwork",
+    "pathos",
+    "patriotism",
+    "pendulum",
+    "penguin",
+    "permission",
+    "persona",
+    "perusal",
+    "pessimism",
+    "peter",
+    "philosopher",
+    "phosphorus",
+    "phrasing",
+    "physique",
+    "piles",
+    "plateau",
+    "playing",
+    "plaza",
+    "plethora",
+    "plurality",
+    "pneumonia",
+    "pointer",
+    "poker",
+    "policeman",
+    "polling",
+    "poster",
+    "posterity",
+    "posting",
+    "postponement",
+    "potassium",
+    "pottery",
+    "poultry",
+    "pounding",
+    "pragmatism",
+    "precedence",
+    "precinct",
+    "preoccupation",
+    "pretense",
+    "priesthood",
+    "prisoner",
+    "privacy",
+    "probation",
+    "proceeding",
+    "proceedings",
+    "processing",
+    "processor",
+    "progression",
+    "projection",
+    "prominence",
+    "propensity",
+    "prophecy",
+    "prorogation",
+    "prospectus",
+    "protein",
+    "prototype",
+    "providence",
+    "provider",
+    "provocation",
+    "proximity",
+    "puberty",
+    "publicist",
+    "publicity",
+    "publisher",
+    "pundit",
+    "putting",
+    "quantity",
+    "quart",
+    "quilting",
+    "quorum",
+    "racism",
+    "radiance",
+    "ralph",
+    "rancher",
+    "ranger",
+    "rapidity",
+    "rapport",
+    "ratification",
+    "rationality",
+    "reaction",
+    "reader",
+    "reassurance",
+    "rebirth",
+    "receptor",
+    "recipe",
+    "recognition",
+    "recourse",
+    "recreation",
+    "rector",
+    "recurrence",
+    "redemption",
+    "redistribution",
+    "redundancy",
+    "refinery",
+    "reformer",
+    "refrigerator",
+    "regularity",
+    "regulator",
+    "reinforcement",
+    "reins",
+    "reinstatement",
+    "relativism",
+    "relaxation",
+    "rendition",
+    "repayment",
+    "repentance",
+    "repertoire",
+    "repository",
+    "republic",
+    "reputation",
+    "resentment",
+    "residency",
+    "resignation",
+    "restaurant",
+    "resurgence",
+    "retailer",
+    "retention",
+    "retirement",
+    "reviewer",
+    "riches",
+    "righteousness",
+    "roadblock",
+    "robber",
+    "rocks",
+    "rubbing",
+    "runoff",
+    "saloon",
+    "salvation",
+    "sarcasm",
+    "saucer",
+    "savior",
+    "scarcity",
+    "scenario",
+    "scenery",
+    "schism",
+    "scholarship",
+    "schoolboy",
+    "schooner",
+    "scissors",
+    "scolding",
+    "scooter",
+    "scouring",
+    "scrimmage",
+    "scrum",
+    "seating",
+    "sediment",
+    "seduction",
+    "seeder",
+    "seizure",
+    "self-confidence",
+    "self-control",
+    "self-respect",
+    "semicolon",
+    "semiconductor",
+    "semifinal",
+    "senator",
+    "sending",
+    "serenity",
+    "seriousness",
+    "servitude",
+    "sesame",
+    "setup",
+    "sewing",
+    "sharpness",
+    "shaving",
+    "shoplifting",
+    "shopping",
+    "siding",
+    "simplicity",
+    "simulation",
+    "sinking",
+    "skate",
+    "sloth",
+    "slugger",
+    "snack",
+    "snail",
+    "snapshot",
+    "snark",
+    "soccer",
+    "solemnity",
+    "solicitation",
+    "solitude",
+    "somewhere",
+    "sophistication",
+    "sorcery",
+    "souvenir",
+    "spaghetti",
+    "specification",
+    "specimen",
+    "specs",
+    "spectacle",
+    "spectre",
+    "speculation",
+    "sperm",
+    "spoiler",
+    "squad",
+    "squid",
+    "staging",
+    "stagnation",
+    "staircase",
+    "stairway",
+    "stamina",
+    "standpoint",
+    "standstill",
+    "stanza",
+    "statement",
+    "stillness",
+    "stimulus",
+    "stocks",
+    "stole",
+    "stoppage",
+    "storey",
+    "storyteller",
+    "stylus",
+    "subcommittee",
+    "subscription",
+    "subsidy",
+    "suburb",
+    "success",
+    "sufferer",
+    "supposition",
+    "suspension",
+    "sweater",
+    "sweepstakes",
+    "swimmer",
+    "syndrome",
+    "synopsis",
+    "syntax",
+    "system",
+    "tablespoon",
+    "taker",
+    "tavern",
+    "technology",
+    "telephony",
+    "template",
+    "tempo",
+    "tendency",
+    "tendon",
+    "terrier",
+    "terror",
+    "terry",
+    "theater",
+    "theology",
+    "therapy",
+    "thicket",
+    "thoroughfare",
+    "threshold",
+    "thriller",
+    "thunderstorm",
+    "ticker",
+    "tiger",
+    "tights",
+    "to-day",
+    "tossing",
+    "touchdown",
+    "tourist",
+    "tourney",
+    "toxicity",
+    "tracing",
+    "tractor",
+    "translation",
+    "transmission",
+    "transmitter",
+    "trauma",
+    "traveler",
+    "treadmill",
+    "trilogy",
+    "trout",
+    "tuning",
+    "twenties",
+    "tycoon",
+    "tyrant",
+    "ultimatum",
+    "underdog",
+    "underwear",
+    "unhappiness",
+    "unification",
+    "university",
+    "uprising",
+    "vaccination",
+    "validity",
+    "vampire",
+    "vanguard",
+    "variation",
+    "vegetation",
+    "verification",
+    "viability",
+    "vicinity",
+    "victory",
+    "viewpoint",
+    "villa",
+    "vindication",
+    "violation",
+    "vista",
+    "vocalist",
+    "vogue",
+    "volcano",
+    "voltage",
+    "vomiting",
+    "vulnerability",
+    "waistcoat",
+    "waitress",
+    "wardrobe",
+    "warmth",
+    "watchdog",
+    "wealth",
+    "weariness",
+    "whereabouts",
+    "whisky",
+    "whiteness",
+    "widget",
+    "width",
+    "windfall",
+    "wiring",
+    "witchcraft",
+    "withholding",
+    "womanhood",
+    "words",
+    "workman",
+    "youngster"
+  ]
+};
+
+// src/dict/words/prepositions.json
+var prepositions_default = {
+  description: "A list of English prepositions, sourced from Wikipedia.",
+  prepositions: [
+    "aboard",
+    "about",
+    "above",
+    "absent",
+    "across",
+    "after",
+    "against",
+    "along",
+    "alongside",
+    "amid",
+    "amidst",
+    "among",
+    "amongst",
+    "around",
+    "as",
+    "astride",
+    "at",
+    "atop",
+    "before",
+    "afore",
+    "behind",
+    "below",
+    "beneath",
+    "beside",
+    "besides",
+    "between",
+    "beyond",
+    "by",
+    "circa",
+    "despite",
+    "down",
+    "during",
+    "except",
+    "for",
+    "from",
+    "in",
+    "inside",
+    "into",
+    "less",
+    "like",
+    "minus",
+    "near",
+    "nearer",
+    "nearest",
+    "of",
+    "off",
+    "on",
+    "onto",
+    "opposite",
+    "outside",
+    "over",
+    "past",
+    "per",
+    "save",
+    "since",
+    "through",
+    "to",
+    "toward",
+    "towards",
+    "under",
+    "until",
+    "up",
+    "upon",
+    "upside",
+    "versus",
+    "via",
+    "with",
+    "within",
+    "without"
+  ]
+};
+
+// src/dict/world/countries.json
+var countries_default = {
+  description: "A list of countries.",
+  countries: [
+    "Argentina",
+    "Australia",
+    "Austria",
+    "Bangladesh",
+    "Belgium",
+    "Brazil",
+    "Canada",
+    "Chile",
+    "China",
+    "Colombia",
+    "Czech Republic",
+    "Denmark",
+    "Egypt",
+    "Ethiopia",
+    "Finland",
+    "France",
+    "Germany",
+    "Ghana",
+    "Greece",
+    "Hungary",
+    "India",
+    "Indonesia",
+    "Iran",
+    "Iraq",
+    "Ireland",
+    "Israel",
+    "Italy",
+    "Japan",
+    "Kenya",
+    "Malaysia",
+    "Mexico",
+    "Morocco",
+    "Nepal",
+    "Netherlands",
+    "New Zealand",
+    "Nigeria",
+    "North Korea",
+    "Norway",
+    "Pakistan",
+    "Peru",
+    "Philippines",
+    "Poland",
+    "Portugal",
+    "Qatar",
+    "Romania",
+    "Russia",
+    "Saudi Arabia",
+    "Singapore",
+    "South Africa",
+    "South Korea",
+    "Spain",
+    "Sri Lanka",
+    "Sweden",
+    "Switzerland",
+    "Syria",
+    "Taiwan",
+    "Thailand",
+    "Turkey",
+    "Ukraine",
+    "United Arab Emirates",
+    "United Kingdom",
+    "United States",
+    "Uzbekistan",
+    "Venezuela",
+    "Vietnam",
+    "Zimbabwe"
+  ]
+};
+
+// src/dict/world/governments.json
+var governments_default = {
+  description: "List of different forms of government from Wikipedia https://en.wikipedia.org/wiki/List_of_forms_of_government",
+  governments: [
+    "autocracy",
+    "democracy",
+    "oligarchy",
+    "anarchy",
+    "confederation",
+    "federation",
+    "unitary state",
+    "demarchy",
+    "electocracy",
+    "republic",
+    "theocracy",
+    "plutocracy",
+    "technocracy",
+    "monarchy",
+    "dictatorship",
+    "city-state",
+    "commune",
+    "empire",
+    "colony"
+  ]
+};
+
+// src/dict/world/nationalities.json
+var nationalities_default = {
+  description: "A list of nationalities.",
+  source: "https://www.gov.uk/government/publications/nationalities/list-of-nationalities",
+  license: "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+  nationalities: [
+    "Afghan",
+    "Algerian",
+    "American",
+    "Argentine",
+    "Australian",
+    "Bangladeshi",
+    "Belgian",
+    "Brazilian",
+    "British",
+    "Canadian",
+    "Chinese",
+    "Colombian",
+    "Cuban",
+    "Danish",
+    "Dutch",
+    "Egyptian",
+    "Ethiopian",
+    "Filipino",
+    "Finnish",
+    "French",
+    "German",
+    "Ghanaian",
+    "Greek",
+    "Indian",
+    "Indonesian",
+    "Iranian",
+    "Iraqi",
+    "Irish",
+    "Israeli",
+    "Italian",
+    "Jamaican",
+    "Japanese",
+    "Kenyan",
+    "Malaysian",
+    "Mexican",
+    "Moroccan",
+    "Nepalese",
+    "Nigerian",
+    "North Korean",
+    "Norwegian",
+    "Pakistani",
+    "Polish",
+    "Portuguese",
+    "Russian",
+    "Saudi Arabian",
+    "South African",
+    "South Korean",
+    "Spanish",
+    "Swedish",
+    "Swiss",
+    "Syrian",
+    "Thai",
+    "Turkish",
+    "Ukrainian",
+    "Vietnamese"
+  ]
+};
+
+// src/dict/Dictionary.ts
+var dict = {
+  human: {
+    authors: authors_default,
+    bodyparts: bodyparts_default
+  },
+  materials: {
+    fabrics: fabrics_default,
+    metals: metals_default
+  },
+  music: {
+    genres: genres_default,
+    instruments: instruments_default
+  },
+  nsfw: {
+    drugs: drugs_default,
+    explicit: explicit_default,
+    porn: porn_default
+  },
+  objects: {
+    clothing: clothing_default,
+    containers: containers_default
+  },
+  words: {
+    adverbs: adverbs_default,
+    common: common_default,
+    nouns: nouns_default,
+    prepositions: prepositions_default
+  },
+  world: {
+    countries: countries_default,
+    governments: governments_default,
+    nationalities: nationalities_default
+  }
+};
 
 // src/Interface.ts
 function initInterface() {
@@ -2839,24 +6550,21 @@ function initInterface() {
 }
 var ui = {};
 function createUI() {
-  ui.header = createElement(sanitize(INTERFACE.HEADER));
-  ui.logo = createElement(sanitize(INTERFACE.HEADER.CONTAINERS.LOGO));
-  ui.login = createElement(sanitize(INTERFACE.HEADER.CONTAINERS.LOGIN));
-  ui.main = createElement(sanitize(INTERFACE.MAIN));
-  ui.home = createElement(sanitize(INTERFACE.CONTAINERS.HOME));
-  ui.menu = createElement(sanitize(INTERFACE.CONTAINERS.MENU));
-  ui.filters = createElement(sanitize(INTERFACE.CONTAINERS.FILTERS));
-  ui.searchInput = createElement(sanitize(INTERFACE.CONTAINERS.INPUT));
-  ui.searchContainer = createElement(sanitize(INTERFACE.CONTAINERS.SEARCH));
-  ui.searchButton = createElement(sanitize(INTERFACE.BUTTONS.SEARCH));
-  ui.progressWrapper = createElement(sanitize(INTERFACE.SLIDERS.PROGRESS_SLIDER.WRAPPER));
-  ui.progressFill = createElement(sanitize(INTERFACE.SLIDERS.PROGRESS_SLIDER.FILL));
+  initHeader();
+  initCore();
+  initFilters();
+  initSearch();
   ProgressEvents.on((percent) => {
     ui.progressFill.style.width = `${Math.floor(percent * 100)}%`;
   });
   ui.searchButton.addEventListener("click", () => {
+    if (state.isSearching) {
+      state.isSearching = false;
+      setText("searchButton", "Search");
+      return;
+    }
     ui.progressFill.style.width = "0%";
-    initSearch();
+    search();
   });
   if (DEBUG.ENABLED) {
     console.log("UI created:", ui);
@@ -2875,57 +6583,319 @@ function createElement(config) {
   target?.appendChild(el);
   return el;
 }
+function initHeader() {
+  ui.header = createElement(sanitize(INTERFACE.HEADER));
+  ui.logo = createElement(sanitize(INTERFACE.HEADER.CONTAINERS.LOGO));
+  ui.login = createElement(sanitize(INTERFACE.HEADER.CONTAINERS.LOGIN));
+}
+function initCore() {
+  ui.main = createElement(sanitize(INTERFACE.MAIN));
+  ui.home = createElement(sanitize(INTERFACE.CONTAINERS.HOME));
+  ui.tabs = createElement(sanitize(INTERFACE.CONTAINERS.TABS));
+  ui.optionsTab = createElement(sanitize(INTERFACE.CONTAINERS.TABS.OPTIONS_TAB));
+  ui.resultsTab = createElement(sanitize(INTERFACE.CONTAINERS.TABS.RESULTS_TAB));
+  ui.optionsTab.addEventListener("click", () => toggleTab(ui.optionsTab));
+  ui.resultsTab.addEventListener("click", () => toggleTab(ui.resultsTab));
+  ui.menu = createElement(sanitize(INTERFACE.CONTAINERS.MENU));
+  ui.results = createElement(sanitize(INTERFACE.CONTAINERS.RESULTS));
+  toggleTab(ui.optionsTab);
+}
+function initFilters() {
+  ui.filtersContainer = createElement(sanitize(INTERFACE.CONTAINERS.FILTERS_CONTAINER));
+  ui.filters = createElement(sanitize(INTERFACE.CONTAINERS.FILTERS));
+  for (const folderName in dict) {
+    const folder = dict[folderName];
+    const categoryID = `filter_category_${folderName}`;
+    const containerID = `filter_container_${folderName}`;
+    const categoryContainer = createElement({
+      type: "div",
+      id: categoryID,
+      class: "category",
+      append: "filters"
+    });
+    ui[categoryID] = categoryContainer;
+    categoryContainer.addEventListener("click", (event) => {
+      if (event.target.classList.contains("toggler")) return;
+      const togglers = categoryContainer.querySelectorAll(".toggler");
+      const allActive = Array.from(togglers).every((t2) => t2.classList.contains("active"));
+      togglers.forEach((toggler) => {
+        toggler.classList.toggle("active", !allActive);
+        if (DEBUG.ENABLED) {
+          console.log(`Toggled ${toggler.textContent} in ${folderName}`);
+        }
+      });
+    });
+    createElement({
+      type: "h3",
+      text: folderName.toUpperCase(),
+      append: categoryID
+    });
+    const filterContainer = createElement({
+      type: "div",
+      id: containerID,
+      class: "filters",
+      append: categoryID
+    });
+    ui[containerID] = filterContainer;
+    for (const entryName in folder) {
+      const toggleID = `toggle_${folderName}_${entryName}`;
+      const toggler = createElement({
+        type: "div",
+        id: toggleID,
+        class: "toggler",
+        text: entryName,
+        append: containerID
+      });
+      toggler.setAttribute("data-group", folderName);
+      toggler.setAttribute("data-key", entryName);
+      toggler.addEventListener("click", () => {
+        toggler.classList.toggle("active");
+        if (DEBUG.ENABLED) {
+          console.log(`Toggled ${entryName} in ${folderName}`);
+        }
+      });
+      ui[toggleID] = toggler;
+    }
+  }
+}
+function initSearch() {
+  ui.customInputContainer = createElement(sanitize(INTERFACE.CONTAINERS.CUSTOM_INPUT_CONTAINER));
+  ui.inputContainer = createElement(sanitize(INTERFACE.CONTAINERS.INPUT_CONTAINER));
+  ui.customInput = createElement(sanitize(INTERFACE.CONTAINERS.INPUT));
+  ui.insertContainer = createElement(sanitize(INTERFACE.CONTAINERS.INSERT_CONTAINER));
+  ui.insertPrefix = createElement(sanitize(INTERFACE.CONTAINERS.INSERT_CONTAINER.INSERT_PREFIX));
+  ui.insertSuffix = createElement(sanitize(INTERFACE.CONTAINERS.INSERT_CONTAINER.INSERT_SUFFIX));
+  ui.insertRandom = createElement(sanitize(INTERFACE.CONTAINERS.INSERT_CONTAINER.INSERT_RANDOM));
+  const insertOptions = [
+    { el: ui.insertPrefix, value: "prefix" },
+    { el: ui.insertSuffix, value: "suffix" },
+    { el: ui.insertRandom, value: "random" }
+  ];
+  insertOptions.forEach((option) => {
+    if (option.value === SEARCH_PREFS.CUSTOM.INSERT) {
+      option.el.classList.add("active");
+    }
+    option.el.addEventListener("click", () => {
+      insertOptions.forEach((opt) => opt.el.classList.remove("active"));
+      option.el.classList.add("active");
+      SEARCH_PREFS.CUSTOM.INSERT = option.value;
+      if (DEBUG.ENABLED) {
+        console.log(`Insert mode set to "${option.value}"`);
+      }
+    });
+  });
+  ui.searchContainer = createElement(sanitize(INTERFACE.CONTAINERS.SEARCH));
+  ui.searchButton = createElement(sanitize(INTERFACE.BUTTONS.SEARCH));
+  ui.progressWrapper = createElement(sanitize(INTERFACE.SLIDERS.PROGRESS_SLIDER.WRAPPER));
+  ui.progressFill = createElement(sanitize(INTERFACE.SLIDERS.PROGRESS_SLIDER.FILL));
+}
+function setText(id, text) {
+  const element = ui[id];
+  if (element) {
+    element.textContent = text;
+  }
+}
+function toggleTab(tab) {
+  const isOptionsTab = tab === ui.optionsTab;
+  if (tab.classList.contains("active")) return;
+  ui.optionsTab.classList.remove("active");
+  ui.resultsTab.classList.remove("active");
+  tab.classList.add("active");
+  if (isOptionsTab) {
+    ui.menu.classList.add("active");
+    ui.menu.classList.remove("hidden");
+    ui.results.classList.remove("active");
+    ui.results.classList.add("hidden");
+  } else {
+    ui.menu.classList.remove("active");
+    ui.menu.classList.add("hidden");
+    ui.results.classList.add("active");
+    ui.results.classList.remove("hidden");
+  }
+  if (DEBUG.ENABLED) {
+    console.log(`Tab switched to ${isOptionsTab ? "Options" : "Results"}`);
+  }
+}
+function renderValidResult(url) {
+  const resultDiv = document.createElement("div");
+  resultDiv.className = INTERFACE.CONTAINERS.RESULT.CLASS;
+  const link = document.createElement("a");
+  link.href = url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = url;
+  resultDiv.appendChild(link);
+  ui.results.appendChild(resultDiv);
+}
+ValidResultEvents.on(renderValidResult);
 
 // src/Main.ts
+var state = {
+  isSearching: false
+};
 initInterface();
-async function initSearch() {
-  const BATCH_SIZE = 50;
+async function search() {
+  if (state.isSearching) return;
+  state.isSearching = true;
+  setText("searchButton", "Cancel");
   let attempts = 0;
+  let progress = 0;
   if (DEBUG.ENABLED) {
     console.log("Starting search with preferences:", SEARCH_PREFS);
   }
-  for (let i2 = 0; i2 < SEARCH_PREFS.LIMITS.RETRIES; i2 += BATCH_SIZE) {
-    const batch = Array.from({ length: BATCH_SIZE }, () => {
-      const domain = SEARCH_PREFS.DOMAINS[Math.floor(Math.random() * SEARCH_PREFS.DOMAINS.length)];
-      const url = generateRandomURL(domain);
-      if (DEBUG.ENABLED && !DEBUG.QUIET) {
-        console.log(`Generated URL: ${url}`);
-      }
-      return { url, promise: checkUrl(url) };
-    });
-    const results = await Promise.all(batch.map((b) => b.promise));
-    attempts += BATCH_SIZE;
-    if (DEBUG.ENABLED && !DEBUG.QUIET) {
-      console.log(`Batch ${Math.floor(i2 / BATCH_SIZE) + 1} checked:`, results);
+  const progressTimer = setInterval(() => {
+    if (progress < 1) {
+      progress += 5e-3;
+      ProgressEvents.emit(progress);
     }
-    const percent = Math.min(attempts / SEARCH_PREFS.LIMITS.RETRIES, 1);
-    ProgressEvents.emit(percent);
-    const firstWorking = batch.find((b, idx) => results[idx]);
-    if (firstWorking) {
-      if (DEBUG.ENABLED) {
-        console.log(`Found working URL: ${firstWorking.url}`);
-      }
-      ProgressEvents.emit(1);
-      window.open(firstWorking.url, "_blank");
-      return;
+  }, 500);
+  try {
+    const globalBatchSet = /* @__PURE__ */ new Set();
+    const batchPromises = [];
+    for (let i2 = 0; i2 < SEARCH_PREFS.LIMITS.RETRIES; i2 += SEARCH_PREFS.LIMITS.BATCH) {
+      const batchDelay = i2 === 0 ? 0 : SEARCH_PREFS.LIMITS.BUFFER;
+      const batchPromise = new Promise((resolve) => {
+        setTimeout(async () => {
+          if (!state.isSearching) {
+            resolve();
+            return;
+          }
+          const batchSet = /* @__PURE__ */ new Set();
+          const batch = [];
+          while (batch.length < SEARCH_PREFS.LIMITS.BATCH) {
+            const domain = SEARCH_PREFS.DOMAINS[Math.floor(Math.random() * SEARCH_PREFS.DOMAINS.length)];
+            const url = generateRandomURL(domain);
+            if (!batchSet.has(url) && !sessionResults.has(url) && !globalBatchSet.has(url)) {
+              batchSet.add(url);
+              globalBatchSet.add(url);
+              batch.push({ url, promise: checkUrl(url) });
+            }
+          }
+          const batchIndex = Math.floor(i2 / SEARCH_PREFS.LIMITS.BATCH) + 1;
+          try {
+            const results = await Promise.all(batch.map((b) => b.promise));
+            if (!state.isSearching) {
+              resolve();
+              return;
+            }
+            attempts += SEARCH_PREFS.LIMITS.BATCH;
+            if (DEBUG.ENABLED) {
+              logBatchResults(batchIndex, batch);
+            }
+            progress = Math.max(progress, attempts / SEARCH_PREFS.LIMITS.RETRIES);
+            ProgressEvents.emit(progress);
+            const workingBatch = batch.filter((b, idx) => results[idx]);
+            if (workingBatch.length > 0) {
+              if (DEBUG.ENABLED) {
+                console.log(`\u2705 Found ${workingBatch.length} valid URLs in batch ${batchIndex}`);
+              }
+              toggleTab(ui.resultsTab);
+              if (SEARCH_PREFS.CUSTOM.OPEN_ON_FIND) {
+                for (const { url } of workingBatch) {
+                  window.open(url, "_blank");
+                }
+              }
+              if (SEARCH_PREFS.CUSTOM.STOP_ON_FIRST) {
+                state.isSearching = false;
+              }
+            }
+          } catch (error) {
+            if (DEBUG.ENABLED) {
+              console.error(`Error in batch ${batchIndex}:`, error);
+            }
+          }
+          resolve();
+        }, batchDelay);
+      });
+      batchPromises.push(batchPromise);
     }
+    await Promise.all(batchPromises);
+    if (DEBUG.ENABLED && state.isSearching) {
+      console.warn("No working URLs found after maximum retries.");
+    }
+  } finally {
+    clearInterval(progressTimer);
+    ProgressEvents.emit(1);
+    state.isSearching = false;
+    setText("searchButton", "Search");
   }
-  if (DEBUG.ENABLED) {
-    console.warn("No working URLs found after maximum retries.");
-  }
-  ProgressEvents.emit(1);
 }
-var optionalWord = null;
+var customWord = null;
+function getCustomWord() {
+  const input = ui.customInput;
+  const word = input?.value.trim();
+  if (DEBUG.ENABLED && word) {
+    console.log(`Getting custom word: ${word}`);
+  }
+  customWord = word || null;
+  return word ? word.toLowerCase() : null;
+}
 function generateRandomURL(domain) {
+  const selected = getSelectedFilters();
   const length = randomInt(SEARCH_PREFS.CUSTOM.LENGTH.MIN, SEARCH_PREFS.CUSTOM.LENGTH.MAX);
-  let randPart = SEARCH_PREFS.CUSTOM.RANDOM ? randomString(SEARCH_PREFS.CUSTOM.CHARACTERS, length) : generateRealisticWord(length);
-  if (optionalWord) {
-    randPart = insertWordRandomly(randPart, optionalWord);
-    if (DEBUG.ENABLED) {
-      console.log(`Inserted optional word: ${optionalWord} into ${randPart}`);
+  let randPart = "";
+  if (selected.length === 0) {
+    switch (SEARCH_PREFS.CUSTOM.RANDOM) {
+      case RANDOM_MODE.RAW:
+        randPart = randomString(SEARCH_PREFS.CUSTOM.CHARACTERS, length);
+        break;
+      case RANDOM_MODE.PHONETIC:
+        randPart = generatePhoneticWord(length);
+        break;
+      case RANDOM_MODE.DICTIONARY:
+        randPart = generateRealisticWord(length);
+        break;
+    }
+  } else {
+    const parts = [];
+    for (const [group, key] of selected) {
+      const entry = dict[group][key];
+      const wordList = getWordList(entry);
+      if (wordList.length > 0) {
+        const word = wordList[Math.floor(Math.random() * wordList.length)];
+        parts.push(word.toLowerCase());
+        if (DEBUG.ENABLED && !DEBUG.QUIET) {
+          console.log(`[${group}.${key}] \u2192 Sample: "${word}" (${wordList.length} words)`);
+        }
+      } else if (DEBUG.ENABLED) {
+        console.warn(`[${group}.${key}] \u2192 No usable word list.`);
+      }
+    }
+    randPart = parts.join("");
+    if (randPart.length > length) randPart = randPart.slice(0, length);
+  }
+  if (!customWord) customWord = getCustomWord();
+  if (customWord) {
+    switch (SEARCH_PREFS.CUSTOM.INSERT) {
+      case "prefix":
+        randPart = customWord + randPart;
+        break;
+      case "suffix":
+        randPart = randPart + customWord;
+        break;
+      default:
+        randPart = insertWordRandomly(randPart, customWord);
     }
   }
-  return `${SEARCH_PREFS.BASE}${randPart}${domain}`;
+  let finalUrl = `${SEARCH_PREFS.BASE}${randPart}${domain}`;
+  let maxRetries = 5;
+  while (sessionResults.has(finalUrl) && maxRetries-- > 0) {
+    randPart = SEARCH_PREFS.CUSTOM.RANDOM ? randomString(SEARCH_PREFS.CUSTOM.CHARACTERS, randomInt(SEARCH_PREFS.CUSTOM.LENGTH.MIN, SEARCH_PREFS.CUSTOM.LENGTH.MAX)) : generateRealisticWord(randomInt(SEARCH_PREFS.CUSTOM.LENGTH.MIN, SEARCH_PREFS.CUSTOM.LENGTH.MAX));
+    if (customWord) {
+      switch (SEARCH_PREFS.CUSTOM.INSERT) {
+        case "prefix":
+          randPart = customWord + randPart;
+          break;
+        case "suffix":
+          randPart = randPart + customWord;
+          break;
+        default:
+          randPart = insertWordRandomly(randPart, customWord);
+      }
+    }
+    finalUrl = `${SEARCH_PREFS.BASE}${randPart}${domain}`;
+  }
+  return finalUrl;
 }
 function generateRealisticWord(maxLength) {
   const raw = n({
@@ -2937,6 +6907,103 @@ function generateRealisticWord(maxLength) {
   if (word.length > maxLength) return word.slice(0, maxLength);
   if (word.length < SEARCH_PREFS.CUSTOM.LENGTH.MIN) return word.padEnd(SEARCH_PREFS.CUSTOM.LENGTH.MIN, "x");
   return word;
+}
+function generatePhoneticWord(maxLength) {
+  const vowels = CHARACTERS.CHARACTER_TYPES.VOWELS;
+  const consonants = CHARACTERS.CHARACTER_TYPES.CONSONANTS;
+  const minLength = SEARCH_PREFS.CUSTOM.LENGTH.MIN;
+  if (Math.random() < SEARCH_PREFS.CUSTOM.COMBINATION_WEIGHT) {
+    return generateWithCombinations(maxLength, minLength);
+  }
+  return generateWithEnhancedPatterns(maxLength, minLength, vowels, consonants);
+}
+function generateWithCombinations(maxLength, minLength) {
+  let word = "";
+  const usedCombinations = /* @__PURE__ */ new Set();
+  while (word.length < maxLength && word.length < minLength + 4) {
+    const validCombos = COMBINATIONS.filter(
+      (combo) => combo.pattern.length <= maxLength - word.length && !usedCombinations.has(combo.pattern)
+    );
+    if (validCombos.length === 0) break;
+    const totalWeight = validCombos.reduce((sum, c) => sum + c.weight, 0);
+    let random = Math.random() * totalWeight;
+    for (const combo of validCombos) {
+      random -= combo.weight;
+      if (random <= 0) {
+        word += combo.pattern;
+        usedCombinations.add(combo.pattern);
+        break;
+      }
+    }
+  }
+  while (word.length < minLength) {
+    const vowels = CHARACTERS.CHARACTER_TYPES.VOWELS;
+    word += vowels[Math.floor(Math.random() * vowels.length)];
+  }
+  return word.slice(0, maxLength);
+}
+function generateWithEnhancedPatterns(maxLength, minLength, vowels, consonants) {
+  const validPatterns = PATTERNS.filter(
+    (p) => p.pattern.length >= minLength && p.pattern.length <= maxLength
+  );
+  if (validPatterns.length === 0) {
+    return generateFallbackPattern(maxLength, minLength, vowels, consonants);
+  }
+  const totalWeight = validPatterns.reduce((sum, p) => sum + p.weight, 0);
+  let random = Math.random() * totalWeight;
+  let selectedPattern = validPatterns[0].pattern;
+  for (const patternObj of validPatterns) {
+    random -= patternObj.weight;
+    if (random <= 0) {
+      selectedPattern = patternObj.pattern;
+      break;
+    }
+  }
+  return buildEnhancedWordFromPattern(selectedPattern, vowels, consonants);
+}
+function buildEnhancedWordFromPattern(pattern, vowels, consonants) {
+  let word = "";
+  for (let i2 = 0; i2 < pattern.length; i2++) {
+    const char = pattern[i2];
+    const nextChar = pattern[i2 + 1];
+    if (char === "c") {
+      if (nextChar && Math.random() < 0.2) {
+        const validCombos = COMBINATIONS.filter(
+          (combo) => combo.pattern.length === 2 && i2 + 1 < pattern.length && (char === "c" && nextChar === "c" || char === "c" && nextChar === "v")
+        );
+        if (validCombos.length > 0) {
+          const combo = validCombos[Math.floor(Math.random() * validCombos.length)];
+          word += combo.pattern;
+          i2++;
+          continue;
+        }
+      }
+      word += consonants[Math.floor(Math.random() * consonants.length)];
+    } else if (char === "v") {
+      if (nextChar === "v" && Math.random() < 0.15) {
+        const vowelCombos = COMBINATIONS.filter(
+          (combo) => combo.pattern.length === 2 && /^[aeiou]{2}$/.test(combo.pattern)
+        );
+        if (vowelCombos.length > 0) {
+          const combo = vowelCombos[Math.floor(Math.random() * vowelCombos.length)];
+          word += combo.pattern;
+          i2++;
+          continue;
+        }
+      }
+      word += vowels[Math.floor(Math.random() * vowels.length)];
+    }
+  }
+  return word;
+}
+function generateFallbackPattern(maxLength, minLength, vowels, consonants) {
+  let pattern = "";
+  let useConsonant = true;
+  for (let i2 = 0; i2 < Math.min(maxLength, Math.max(minLength, 4)); i2++) {
+    pattern += useConsonant ? "c" : "v";
+    useConsonant = !useConsonant;
+  }
+  return buildEnhancedWordFromPattern(pattern, vowels, consonants);
 }
 function insertWordRandomly(base, word) {
   const pos = randomInt(0, base.length);
@@ -2951,6 +7018,12 @@ function getRoot(url) {
   }
 }
 async function checkUrl(url) {
+  if (sessionResults.has(url)) {
+    if (DEBUG.ENABLED) {
+      console.log(`\u{1F501} Using cached result for ${url}`);
+    }
+    return sessionResults.get(url).valid;
+  }
   try {
     const response = await axios_default.head(url, {
       timeout: SEARCH_PREFS.LIMITS.TIMEOUT,
@@ -2959,24 +7032,128 @@ async function checkUrl(url) {
     });
     const originalRoot = getRoot(url);
     const finalRoot = getRoot(response.request?.responseURL || url);
-    if (DEBUG.ENABLED && !DEBUG.QUIET) {
-      console.log(`\u21AA\uFE0F Checked ${url} -> status: ${response.status}, final url: ${finalRoot}`);
+    const redirected = originalRoot !== finalRoot;
+    const result = {
+      url,
+      valid: !redirected && response.status < 400,
+      status: response.status,
+      redirectedTo: redirected ? finalRoot : void 0,
+      checkedAt: Date.now()
+    };
+    sessionResults.set(url, result);
+    if (result.valid) {
+      validResults.set(url, result);
+      ValidResultEvents.emit(url);
+    } else if (redirected) {
+      redirectedResults.set(url, result);
     }
-    if (originalRoot !== finalRoot) {
-      if (DEBUG.ENABLED && !DEBUG.QUIET) {
-        console.log(`\u21AA\uFE0F Redirected to ${response.request?.responseURL}. Skipping.`);
-      }
-      return false;
+    return result.valid;
+  } catch (error) {
+    const result = {
+      url,
+      valid: false,
+      checkedAt: Date.now(),
+      reason: error?.message || "unknown error"
+    };
+    sessionResults.set(url, result);
+    const fallbackSuccess = await fallback(error, url);
+    if (fallbackSuccess) {
+      const updatedResult = {
+        url,
+        valid: true,
+        checkedAt: Date.now(),
+        reason: "recovered via fallback"
+      };
+      sessionResults.set(url, updatedResult);
+      validResults.set(url, updatedResult);
+      ValidResultEvents.emit(url);
     }
-    if (DEBUG.ENABLED) {
-      console.log(`\u2714\uFE0F URL ${url} is valid.`);
-    }
-    return response.status < 400;
+    return fallbackSuccess;
+  }
+}
+async function fallback(error, url) {
+  const err = error;
+  const message = (err?.message || "").toLowerCase();
+  const code = err?.code || "";
+  if (message.includes("cors") || message.includes("err_failed")) {
+    return await corsImageCheck(url);
+  }
+  if (message.includes("name_not_resolved")) {
+    return false;
+  }
+  if (message.includes("ssl") || message.includes("cert") || message.includes("cipher") || message.includes("protocol")) {
+    return false;
+  }
+  if (message.includes("405") || message.includes("redirect") || message.includes("302") || message.includes("301")) {
+    return await tryGetInstead(url);
+  }
+  if (code === "ECONNABORTED" || message.includes("timeout")) {
+    return await retryWithLongerTimeout(url);
+  }
+  return false;
+}
+async function corsImageCheck(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const timeout = setTimeout(() => resolve(false), 3e3);
+    img.onload = () => {
+      clearTimeout(timeout);
+      resolve(true);
+    };
+    img.onerror = () => {
+      clearTimeout(timeout);
+      resolve(false);
+    };
+    img.src = url;
+  });
+}
+async function tryGetInstead(url) {
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      mode: "no-cors"
+    });
+    return await corsImageCheck(url);
   } catch {
     return false;
   }
 }
+async function retryWithLongerTimeout(url) {
+  try {
+    const response = await axios_default.head(url, {
+      timeout: 3e3,
+      maxRedirects: 2,
+      validateStatus: () => true
+    });
+    if (response.status < 400) {
+      if (DEBUG.ENABLED) console.log(`\u23F1\uFE0F Recovered after timeout: ${url}`);
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+function getSelectedFilters() {
+  const selected = [];
+  document.querySelectorAll(".toggler.active").forEach((el) => {
+    const group = el.getAttribute("data-group");
+    const key = el.getAttribute("data-key");
+    if (group && key) selected.push([group, key]);
+  });
+  return selected;
+}
+function getWordList(entry) {
+  if (Array.isArray(entry)) return entry;
+  if (typeof entry === "object" && entry !== null) {
+    for (const value of Object.values(entry)) {
+      if (Array.isArray(value)) return value;
+    }
+  }
+  return [];
+}
 export {
-  initSearch
+  search,
+  state
 };
 //# sourceMappingURL=main.js.map
