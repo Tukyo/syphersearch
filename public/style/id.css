@@ -1,37 +1,40 @@
 /* #region Background */
 #background {
-    position: fixed; /* Ensure the background stays in place */
+    position: fixed;
+    /* Ensure the background stays in place */
     top: 0;
     left: 0;
     width: 100%;
     height: 110%;
     z-index: -1000;
     background-color: var(--secondary-color);
-    background-size:auto;
+    background-size: auto;
     background-position: center;
-    background-attachment: fixed; /* Create parallax base with CSS */
+    background-attachment: fixed;
+    /* Create parallax base with CSS */
 }
+
 /* #endregion Background */
 /*
 *
 */
 /* #region Body */
-#main {
-    display: flex;
-}
 #home {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 90%;
     min-width: 90%;
 }
-#menu, #results {
+
+#menu,
+#results,
+#help {
     flex-direction: column;
     align-items: center;
     justify-content: center;
     max-width: 90%;
     min-height: 100px;
+    max-height: 50vh;
     border-radius: var(--border-radius);
     background: transparent;
     box-shadow: inset 0 0 20px var(--slate-20);
@@ -39,15 +42,23 @@
     --webkit-backdrop-filter: blur(2px);
 }
 
+#help {
+    align-items: start;
+    justify-content: flex-start;
+    overflow-y: scroll;
+}
+
 #menu::before {
     content: "";
     position: absolute;
-    inset: 0; /* shorthand for top: 0; right: 0; bottom: 0; left: 0 */
+    inset: 0;
+    /* shorthand for top: 0; right: 0; bottom: 0; left: 0 */
     pointer-events: none;
-    z-index: 1; /* above background but below content unless you need otherwise */
+    z-index: 1;
+    /* above background but below content unless you need otherwise */
 }
 
-#menu > h3 {
+#menu>h3 {
     position: absolute;
     margin: 0;
     bottom: 10px;
@@ -68,7 +79,7 @@
     padding: 1rem;
 }
 
-#filters > h3 {
+#filters>h3 {
     position: absolute;
     margin: 0;
     bottom: 10px;
@@ -77,6 +88,7 @@
     filter: blur(1px);
     z-index: -1;
 }
+
 /* #endregion Body */
 /*
 *
@@ -87,15 +99,55 @@
     flex-direction: column;
     align-items: center;
 }
+
 #search_button {
     border-radius: var(--border-radius) var(--border-radius) 0 0;
     border-style: solid;
     border-width: 2px 2px 0 2px;
     border-color: var(--tertiary-color);
+    width: 100%;
 }
+
 #progress_wrapper {
     border-width: 0px 2px 2px 2px;
     border-radius: 0 0 var(--border-radius) var(--border-radius);
+}
+
+#search_settings_toggles {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+#search_settings_toggles>* {
+    cursor: pointer;
+}
+
+#search_settings_toggles .category {
+    align-items: center;
+    justify-content: center;
+    flex-direction: row;
+    gap: 1rem;
+    padding: 0.5rem;
+    min-width: 15%;
+    border-radius: calc(var(--border-radius) * 4);
+    color: var(--font-color-alt);
+}
+
+#search_settings_toggles .toggler {
+    min-width: 0.25rem;
+    min-height: 0.25rem;
+}
+
+#search_settings_toggles .toggler.active {
+    background: var(--font-color-alt);
+}
+
+#search_limits_container {
+    flex-direction: row;
+    gap: 1rem;
 }
 
 /* #endregion Search */
@@ -106,19 +158,23 @@
 #custom_input_container {
     padding: 1rem;
 }
+
 #custom_input_container:hover h3 {
     color: var(--font-color-alt);
 }
+
 #custom_input_container h3 {
     margin: 0;
     margin-bottom: 0.5rem;
 }
+
 #input_container {
     min-height: 0px;
     padding: 0.25rem;
     border-radius: var(--border-radius);
     background-color: var(--background-color-alt);
 }
+
 #insert_container {
     display: flex;
     flex-direction: row;
@@ -128,35 +184,152 @@
     gap: 0.5rem;
     padding: 0.5rem;
 }
+
 #custom_input {
     width: 90%;
     margin-top: 0.5rem;
 }
+
 #filters_container {
     display: flex;
     scale: 1;
 }
+
 /* #endregion Filters */
 /*
 *
 */
+/* #region Settings */
+#generation_container .container {
+    min-width: 0;
+    gap: 0.5rem;
+}
+
+#domains_container {
+    gap: 1rem;
+}
+
+#cluster_chance_settings_container {
+    min-height: 105px;
+}
+
+#cluster_chance_settings {
+    min-height: 100%;
+    padding: 0.5rem;
+}
+
+#cluster_chance_outer_container {
+    flex-direction: row;
+}
+
+#cluster_chance_container {
+    margin-top: 0.5rem;
+    width: 90%;
+    padding: 10px;
+    box-shadow: inset 0 0 20px var(--slate-20);
+    border-radius: calc(var(--border-radius) * 4);
+}
+
+#cluster_chance_container:hover {
+    cursor: pointer;
+    box-shadow: inset 0 0 10px 20px var(--slate);
+}
+
+#search_lengths_input_container,
+#fallback_limits_container {
+    flex-direction: row;
+    gap: 1rem;
+}
+
+/* #endregion Settings */
+/*
+*
+*/
 /* #region Tabs */
-#tabs {
+#tabs,
+#subtabs {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
     gap: 0;
 }
+
+#help_tab {
+    max-width: 3%;
+    margin-right: 0.5rem;
+    border-radius: calc(var(--border-radius) * 4);
+}
+
 #options_tab {
     border-top-left-radius: calc(var(--border-radius) * 4);
     border-bottom-left-radius: calc(var(--border-radius) * 4);
 }
+
 #results_tab {
     border-top-right-radius: calc(var(--border-radius) * 4);
     border-bottom-right-radius: calc(var(--border-radius) * 4);
 }
+
+#subtabs {
+    min-width: 0;
+    width: 90%;
+}
+
+#filters_subtab {
+    border-top-left-radius: calc(var(--border-radius) * 4);
+    border-bottom-left-radius: calc(var(--border-radius) * 4);
+}
+
+#advanced_subtab {
+    border-top-right-radius: calc(var(--border-radius) * 4);
+    border-bottom-right-radius: calc(var(--border-radius) * 4);
+}
+
+#filters_container,
+#search_settings_container,
+#advanced_container {
+    display: none;
+}
+
+#filters_container.active,
+#search_settings_container.active,
+#advanced_container.active {
+    display: flex;
+}
+
 /* #endregion Tabs */
+/*
+*
+*/
+/* #region Help */
+#help_content {
+    min-width: 80%;
+    max-width: 80%;
+    text-align: center;
+}
+
+#help_content h2 {
+    position: absolute;
+    top: 0.5rem;
+    left: 2rem;
+    color: var(--font-color-alt);
+    font-size: 2.5em;
+    margin: 0;
+}
+
+/* #endregion Help */
+/*
+*
+*/
+/* #region Results */
+#results {
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+/* #endregion Results */
 /*
 *
 */
@@ -170,6 +343,8 @@
     pointer-events: none;
     white-space: nowrap;
     z-index: 9999;
-    display: none; /* Initially hidden */
+    display: none;
+    /* Initially hidden */
 }
+
 /* #endregion Tooltip */

@@ -57,7 +57,7 @@ var isEmptyObject = (val) => {
   }
   try {
     return Object.keys(val).length === 0 && Object.getPrototypeOf(val) === Object.prototype;
-  } catch (e2) {
+  } catch (e) {
     return false;
   }
 };
@@ -78,14 +78,14 @@ function forEach(obj, fn, { allOwnKeys = false } = {}) {
   if (obj === null || typeof obj === "undefined") {
     return;
   }
-  let i2;
-  let l2;
+  let i;
+  let l;
   if (typeof obj !== "object") {
     obj = [obj];
   }
   if (isArray(obj)) {
-    for (i2 = 0, l2 = obj.length; i2 < l2; i2++) {
-      fn.call(null, obj[i2], i2, obj);
+    for (i = 0, l = obj.length; i < l; i++) {
+      fn.call(null, obj[i], i, obj);
     }
   } else {
     if (isBuffer(obj)) {
@@ -94,8 +94,8 @@ function forEach(obj, fn, { allOwnKeys = false } = {}) {
     const keys = allOwnKeys ? Object.getOwnPropertyNames(obj) : Object.keys(obj);
     const len = keys.length;
     let key;
-    for (i2 = 0; i2 < len; i2++) {
-      key = keys[i2];
+    for (i = 0; i < len; i++) {
+      key = keys[i];
       fn.call(null, obj[key], key, obj);
     }
   }
@@ -106,10 +106,10 @@ function findKey(obj, key) {
   }
   key = key.toLowerCase();
   const keys = Object.keys(obj);
-  let i2 = keys.length;
+  let i = keys.length;
   let _key;
-  while (i2-- > 0) {
-    _key = keys[i2];
+  while (i-- > 0) {
+    _key = keys[i];
     if (key === _key.toLowerCase()) {
       return _key;
     }
@@ -136,8 +136,8 @@ function merge() {
       result[targetKey] = val;
     }
   };
-  for (let i2 = 0, l2 = arguments.length; i2 < l2; i2++) {
-    arguments[i2] && forEach(arguments[i2], assignValue);
+  for (let i = 0, l = arguments.length; i < l; i++) {
+    arguments[i] && forEach(arguments[i], assignValue);
   }
   return result;
 }
@@ -167,16 +167,16 @@ var inherits = (constructor, superConstructor, props, descriptors2) => {
 };
 var toFlatObject = (sourceObj, destObj, filter2, propFilter) => {
   let props;
-  let i2;
+  let i;
   let prop;
   const merged = {};
   destObj = destObj || {};
   if (sourceObj == null) return destObj;
   do {
     props = Object.getOwnPropertyNames(sourceObj);
-    i2 = props.length;
-    while (i2-- > 0) {
-      prop = props[i2];
+    i = props.length;
+    while (i-- > 0) {
+      prop = props[i];
       if ((!propFilter || propFilter(prop, sourceObj, destObj)) && !merged[prop]) {
         destObj[prop] = sourceObj[prop];
         merged[prop] = true;
@@ -198,11 +198,11 @@ var endsWith = (str, searchString, position) => {
 var toArray = (thing) => {
   if (!thing) return null;
   if (isArray(thing)) return thing;
-  let i2 = thing.length;
-  if (!isNumber(i2)) return null;
-  const arr = new Array(i2);
-  while (i2-- > 0) {
-    arr[i2] = thing[i2];
+  let i = thing.length;
+  if (!isNumber(i)) return null;
+  const arr = new Array(i);
+  while (i-- > 0) {
+    arr[i] = thing[i];
   }
   return arr;
 };
@@ -289,7 +289,7 @@ function isSpecCompliantForm(thing) {
 }
 var toJSONObject = (obj) => {
   const stack = new Array(10);
-  const visit = (source, i2) => {
+  const visit = (source, i) => {
     if (isObject(source)) {
       if (stack.indexOf(source) >= 0) {
         return;
@@ -298,13 +298,13 @@ var toJSONObject = (obj) => {
         return source;
       }
       if (!("toJSON" in source)) {
-        stack[i2] = source;
+        stack[i] = source;
         const target = isArray(source) ? [] : {};
         forEach(source, (value, key) => {
-          const reducedValue = visit(value, i2 + 1);
+          const reducedValue = visit(value, i + 1);
           !isUndefined(reducedValue) && (target[key] = reducedValue);
         });
-        stack[i2] = void 0;
+        stack[i] = void 0;
         return target;
       }
     }
@@ -483,9 +483,9 @@ function removeBrackets(key) {
 }
 function renderKey(path, key, dots) {
   if (!path) return key;
-  return path.concat(key).map(function each(token, i2) {
+  return path.concat(key).map(function each(token, i) {
     token = removeBrackets(token);
-    return !dots && i2 ? "[" + token + "]" : token;
+    return !dots && i ? "[" + token + "]" : token;
   }).join(dots ? "." : "");
 }
 function isFlatArray(arr) {
@@ -791,11 +791,11 @@ function parsePropPath(name) {
 function arrayToObject(arr) {
   const obj = {};
   const keys = Object.keys(arr);
-  let i2;
+  let i;
   const len = keys.length;
   let key;
-  for (i2 = 0; i2 < len; i2++) {
-    key = keys[i2];
+  for (i = 0; i < len; i++) {
+    key = keys[i];
     obj[key] = arr[key];
   }
   return obj;
@@ -841,9 +841,9 @@ function stringifySafely(rawValue, parser, encoder) {
     try {
       (parser || JSON.parse)(rawValue);
       return utils_default.trim(rawValue);
-    } catch (e2) {
-      if (e2.name !== "SyntaxError") {
-        throw e2;
+    } catch (e) {
+      if (e.name !== "SyntaxError") {
+        throw e;
       }
     }
   }
@@ -905,12 +905,12 @@ var defaults = {
       const strictJSONParsing = !silentJSONParsing && JSONRequested;
       try {
         return JSON.parse(data);
-      } catch (e2) {
+      } catch (e) {
         if (strictJSONParsing) {
-          if (e2.name === "SyntaxError") {
-            throw AxiosError_default.from(e2, AxiosError_default.ERR_BAD_RESPONSE, this, null, this.response);
+          if (e.name === "SyntaxError") {
+            throw AxiosError_default.from(e, AxiosError_default.ERR_BAD_RESPONSE, this, null, this.response);
           }
-          throw e2;
+          throw e;
         }
       }
     }
@@ -968,11 +968,11 @@ var parseHeaders_default = (rawHeaders) => {
   const parsed = {};
   let key;
   let val;
-  let i2;
+  let i;
   rawHeaders && rawHeaders.split("\n").forEach(function parser(line) {
-    i2 = line.indexOf(":");
-    key = line.substring(0, i2).trim().toLowerCase();
-    val = line.substring(i2 + 1).trim();
+    i = line.indexOf(":");
+    key = line.substring(0, i).trim().toLowerCase();
+    val = line.substring(i + 1).trim();
     if (!key || parsed[key] && ignoreDuplicateOf[key]) {
       return;
     }
@@ -1128,10 +1128,10 @@ var AxiosHeaders = class {
   }
   clear(matcher) {
     const keys = Object.keys(this);
-    let i2 = keys.length;
+    let i = keys.length;
     let deleted = false;
-    while (i2--) {
-      const key = keys[i2];
+    while (i--) {
+      const key = keys[i];
       if (!matcher || matchHeaderValue(this, this[key], key, matcher, true)) {
         delete this[key];
         deleted = true;
@@ -1285,11 +1285,11 @@ function speedometer(samplesCount, min) {
     }
     bytes[head] = chunkLength;
     timestamps[head] = now;
-    let i2 = tail;
+    let i = tail;
     let bytesCount = 0;
-    while (i2 !== head) {
-      bytesCount += bytes[i2++];
-      i2 = i2 % samplesCount;
+    while (i !== head) {
+      bytesCount += bytes[i++];
+      i = i % samplesCount;
     }
     head = (head + 1) % samplesCount;
     if (head === tail) {
@@ -1343,9 +1343,9 @@ var throttle_default = throttle;
 var progressEventReducer = (listener, isDownloadStream, freq = 3) => {
   let bytesNotified = 0;
   const _speedometer = speedometer_default(50, 250);
-  return throttle_default((e2) => {
-    const loaded = e2.loaded;
-    const total = e2.lengthComputable ? e2.total : void 0;
+  return throttle_default((e) => {
+    const loaded = e.loaded;
+    const total = e.lengthComputable ? e.total : void 0;
     const progressBytes = loaded - bytesNotified;
     const rate = _speedometer(progressBytes);
     const inRange = loaded <= total;
@@ -1357,7 +1357,7 @@ var progressEventReducer = (listener, isDownloadStream, freq = 3) => {
       bytes: progressBytes,
       rate: rate ? rate : void 0,
       estimated: rate && total && inRange ? (total - loaded) / rate : void 0,
-      event: e2,
+      event: e,
       lengthComputable: total != null,
       [isDownloadStream ? "download" : "upload"]: true
     };
@@ -1753,10 +1753,10 @@ var trackStream = (stream, chunkSize, onProgress, onFinish) => {
   const iterator2 = readBytes(stream, chunkSize);
   let bytes = 0;
   let done;
-  let _onFinish = (e2) => {
+  let _onFinish = (e) => {
     if (!done) {
       done = true;
-      onFinish && onFinish(e2);
+      onFinish && onFinish(e);
     }
   };
   return new ReadableStream({
@@ -1795,7 +1795,7 @@ var encodeText = isFetchSupported && (typeof TextEncoder === "function" ? /* @__
 var test = (fn, ...args) => {
   try {
     return !!fn(...args);
-  } catch (e2) {
+  } catch (e) {
     return false;
   }
 };
@@ -1962,7 +1962,7 @@ utils_default.forEach(knownAdapters, (fn, value) => {
   if (fn) {
     try {
       Object.defineProperty(fn, "name", { value });
-    } catch (e2) {
+    } catch (e) {
     }
     Object.defineProperty(fn, "adapterName", { value });
   }
@@ -1976,8 +1976,8 @@ var adapters_default = {
     let nameOrAdapter;
     let adapter;
     const rejectedReasons = {};
-    for (let i2 = 0; i2 < length; i2++) {
-      nameOrAdapter = adapters[i2];
+    for (let i = 0; i < length; i++) {
+      nameOrAdapter = adapters[i];
       let id;
       adapter = nameOrAdapter;
       if (!isResolvedHandle(nameOrAdapter)) {
@@ -1989,7 +1989,7 @@ var adapters_default = {
       if (adapter) {
         break;
       }
-      rejectedReasons[id || "#" + i2] = adapter;
+      rejectedReasons[id || "#" + i] = adapter;
     }
     if (!adapter) {
       const reasons = Object.entries(rejectedReasons).map(
@@ -2056,9 +2056,9 @@ var VERSION = "1.11.0";
 
 // node_modules/axios/lib/helpers/validator.js
 var validators = {};
-["object", "boolean", "number", "function", "string", "symbol"].forEach((type, i2) => {
+["object", "boolean", "number", "function", "string", "symbol"].forEach((type, i) => {
   validators[type] = function validator(thing) {
-    return typeof thing === type || "a" + (i2 < 1 ? "n " : " ") + type;
+    return typeof thing === type || "a" + (i < 1 ? "n " : " ") + type;
   };
 });
 var deprecatedWarnings = {};
@@ -2096,9 +2096,9 @@ function assertOptions(options, schema, allowUnknown) {
     throw new AxiosError_default("options must be an object", AxiosError_default.ERR_BAD_OPTION_VALUE);
   }
   const keys = Object.keys(options);
-  let i2 = keys.length;
-  while (i2-- > 0) {
-    const opt = keys[i2];
+  let i = keys.length;
+  while (i-- > 0) {
+    const opt = keys[i];
     const validator = schema[opt];
     if (validator) {
       const value = options[opt];
@@ -2150,7 +2150,7 @@ var Axios = class {
           } else if (stack && !String(err.stack).endsWith(stack.replace(/^.+\n.+\n/, ""))) {
             err.stack += "\n" + stack;
           }
-        } catch (e2) {
+        } catch (e) {
         }
       }
       throw err;
@@ -2220,7 +2220,7 @@ var Axios = class {
       responseInterceptorChain.push(interceptor.fulfilled, interceptor.rejected);
     });
     let promise;
-    let i2 = 0;
+    let i = 0;
     let len;
     if (!synchronousRequestInterceptors) {
       const chain = [dispatchRequest.bind(this), void 0];
@@ -2228,17 +2228,17 @@ var Axios = class {
       chain.push(...responseInterceptorChain);
       len = chain.length;
       promise = Promise.resolve(config);
-      while (i2 < len) {
-        promise = promise.then(chain[i2++], chain[i2++]);
+      while (i < len) {
+        promise = promise.then(chain[i++], chain[i++]);
       }
       return promise;
     }
     len = requestInterceptorChain.length;
     let newConfig = config;
-    i2 = 0;
-    while (i2 < len) {
-      const onFulfilled = requestInterceptorChain[i2++];
-      const onRejected = requestInterceptorChain[i2++];
+    i = 0;
+    while (i < len) {
+      const onFulfilled = requestInterceptorChain[i++];
+      const onRejected = requestInterceptorChain[i++];
       try {
         newConfig = onFulfilled(newConfig);
       } catch (error) {
@@ -2251,10 +2251,10 @@ var Axios = class {
     } catch (error) {
       return Promise.reject(error);
     }
-    i2 = 0;
+    i = 0;
     len = responseInterceptorChain.length;
-    while (i2 < len) {
-      promise = promise.then(responseInterceptorChain[i2++], responseInterceptorChain[i2++]);
+    while (i < len) {
+      promise = promise.then(responseInterceptorChain[i++], responseInterceptorChain[i++]);
     }
     return promise;
   }
@@ -2304,9 +2304,9 @@ var CancelToken = class _CancelToken {
     const token = this;
     this.promise.then((cancel) => {
       if (!token._listeners) return;
-      let i2 = token._listeners.length;
-      while (i2-- > 0) {
-        token._listeners[i2](cancel);
+      let i = token._listeners.length;
+      while (i-- > 0) {
+        token._listeners[i](cancel);
       }
       token._listeners = null;
     });
@@ -2378,8 +2378,8 @@ var CancelToken = class _CancelToken {
    */
   static source() {
     let cancel;
-    const token = new _CancelToken(function executor(c) {
-      cancel = c;
+    const token = new _CancelToken(function executor(c2) {
+      cancel = c2;
     });
     return {
       token,
@@ -2525,540 +2525,98 @@ var {
   mergeConfig: mergeConfig2
 } = axios_default;
 
-// node_modules/unique-names-generator/dist/index.m.js
-var a = (a2) => {
-  a2 = 1831565813 + (a2 |= 0) | 0;
-  let e2 = Math.imul(a2 ^ a2 >>> 15, 1 | a2);
-  return e2 = e2 + Math.imul(e2 ^ e2 >>> 7, 61 | e2) ^ e2, ((e2 ^ e2 >>> 14) >>> 0) / 4294967296;
-};
-var e = class {
-  constructor(a2) {
-    this.dictionaries = void 0, this.length = void 0, this.separator = void 0, this.style = void 0, this.seed = void 0;
-    const { length: e2, separator: i2, dictionaries: n2, style: l2, seed: r2 } = a2;
-    this.dictionaries = n2, this.separator = i2, this.length = e2, this.style = l2, this.seed = r2;
-  }
-  generate() {
-    if (!this.dictionaries) throw new Error('Cannot find any dictionary. Please provide at least one, or leave the "dictionary" field empty in the config object');
-    if (this.length <= 0) throw new Error("Invalid length provided");
-    if (this.length > this.dictionaries.length) throw new Error(`The length cannot be bigger than the number of dictionaries.
-Length provided: ${this.length}. Number of dictionaries provided: ${this.dictionaries.length}`);
-    let e2 = this.seed;
-    return this.dictionaries.slice(0, this.length).reduce((i2, n2) => {
-      let l2;
-      e2 ? (l2 = ((e3) => {
-        if ("string" == typeof e3) {
-          const i3 = e3.split("").map((a2) => a2.charCodeAt(0)).reduce((a2, e4) => a2 + e4, 1), n3 = Math.floor(Number(i3));
-          return a(n3);
-        }
-        return a(e3);
-      })(e2), e2 = 4294967296 * l2) : l2 = Math.random();
-      let r2 = n2[Math.floor(l2 * n2.length)] || "";
-      if ("lowerCase" === this.style) r2 = r2.toLowerCase();
-      else if ("capital" === this.style) {
-        const [a2, ...e3] = r2.split("");
-        r2 = a2.toUpperCase() + e3.join("");
-      } else "upperCase" === this.style && (r2 = r2.toUpperCase());
-      return i2 ? `${i2}${this.separator}${r2}` : `${r2}`;
-    }, "");
-  }
-};
-var i = { separator: "_", dictionaries: [] };
-var n = (a2) => {
-  const n2 = [...a2 && a2.dictionaries || i.dictionaries], l2 = { ...i, ...a2, length: a2 && a2.length || n2.length, dictionaries: n2 };
-  if (!a2 || !a2.dictionaries || !a2.dictionaries.length) throw new Error('A "dictionaries" array must be provided. This is a breaking change introduced starting from Unique Name Generator v4. Read more about the breaking change here: https://github.com/andreasonny83/unique-names-generator#migration-guide');
-  return new e(l2).generate();
-};
-var l = ["able", "above", "absent", "absolute", "abstract", "abundant", "academic", "acceptable", "accepted", "accessible", "accurate", "accused", "active", "actual", "acute", "added", "additional", "adequate", "adjacent", "administrative", "adorable", "advanced", "adverse", "advisory", "aesthetic", "afraid", "aggregate", "aggressive", "agreeable", "agreed", "agricultural", "alert", "alive", "alleged", "allied", "alone", "alright", "alternative", "amateur", "amazing", "ambitious", "amused", "ancient", "angry", "annoyed", "annual", "anonymous", "anxious", "appalling", "apparent", "applicable", "appropriate", "arbitrary", "architectural", "armed", "arrogant", "artificial", "artistic", "ashamed", "asleep", "assistant", "associated", "atomic", "attractive", "automatic", "autonomous", "available", "average", "awake", "aware", "awful", "awkward", "back", "bad", "balanced", "bare", "basic", "beautiful", "beneficial", "better", "bewildered", "big", "binding", "biological", "bitter", "bizarre", "blank", "blind", "blonde", "bloody", "blushing", "boiling", "bold", "bored", "boring", "bottom", "brainy", "brave", "breakable", "breezy", "brief", "bright", "brilliant", "broad", "broken", "bumpy", "burning", "busy", "calm", "capable", "capitalist", "careful", "casual", "causal", "cautious", "central", "certain", "changing", "characteristic", "charming", "cheap", "cheerful", "chemical", "chief", "chilly", "chosen", "christian", "chronic", "chubby", "circular", "civic", "civil", "civilian", "classic", "classical", "clean", "clear", "clever", "clinical", "close", "closed", "cloudy", "clumsy", "coastal", "cognitive", "coherent", "cold", "collective", "colonial", "colorful", "colossal", "coloured", "colourful", "combative", "combined", "comfortable", "coming", "commercial", "common", "communist", "compact", "comparable", "comparative", "compatible", "competent", "competitive", "complete", "complex", "complicated", "comprehensive", "compulsory", "conceptual", "concerned", "concrete", "condemned", "confident", "confidential", "confused", "conscious", "conservation", "conservative", "considerable", "consistent", "constant", "constitutional", "contemporary", "content", "continental", "continued", "continuing", "continuous", "controlled", "controversial", "convenient", "conventional", "convinced", "convincing", "cooing", "cool", "cooperative", "corporate", "correct", "corresponding", "costly", "courageous", "crazy", "creative", "creepy", "criminal", "critical", "crooked", "crowded", "crucial", "crude", "cruel", "cuddly", "cultural", "curious", "curly", "current", "curved", "cute", "daily", "damaged", "damp", "dangerous", "dark", "dead", "deaf", "deafening", "dear", "decent", "decisive", "deep", "defeated", "defensive", "defiant", "definite", "deliberate", "delicate", "delicious", "delighted", "delightful", "democratic", "dependent", "depressed", "desirable", "desperate", "detailed", "determined", "developed", "developing", "devoted", "different", "difficult", "digital", "diplomatic", "direct", "dirty", "disabled", "disappointed", "disastrous", "disciplinary", "disgusted", "distant", "distinct", "distinctive", "distinguished", "disturbed", "disturbing", "diverse", "divine", "dizzy", "domestic", "dominant", "double", "doubtful", "drab", "dramatic", "dreadful", "driving", "drunk", "dry", "dual", "due", "dull", "dusty", "dutch", "dying", "dynamic", "eager", "early", "eastern", "easy", "economic", "educational", "eerie", "effective", "efficient", "elaborate", "elated", "elderly", "eldest", "electoral", "electric", "electrical", "electronic", "elegant", "eligible", "embarrassed", "embarrassing", "emotional", "empirical", "empty", "enchanting", "encouraging", "endless", "energetic", "enormous", "enthusiastic", "entire", "entitled", "envious", "environmental", "equal", "equivalent", "essential", "established", "estimated", "ethical", "ethnic", "eventual", "everyday", "evident", "evil", "evolutionary", "exact", "excellent", "exceptional", "excess", "excessive", "excited", "exciting", "exclusive", "existing", "exotic", "expected", "expensive", "experienced", "experimental", "explicit", "extended", "extensive", "external", "extra", "extraordinary", "extreme", "exuberant", "faint", "fair", "faithful", "familiar", "famous", "fancy", "fantastic", "far", "fascinating", "fashionable", "fast", "fat", "fatal", "favourable", "favourite", "federal", "fellow", "female", "feminist", "few", "fierce", "filthy", "final", "financial", "fine", "firm", "fiscal", "fit", "fixed", "flaky", "flat", "flexible", "fluffy", "fluttering", "flying", "following", "fond", "foolish", "foreign", "formal", "formidable", "forthcoming", "fortunate", "forward", "fragile", "frail", "frantic", "free", "frequent", "fresh", "friendly", "frightened", "front", "frozen", "full", "fun", "functional", "fundamental", "funny", "furious", "future", "fuzzy", "gastric", "gay", "general", "generous", "genetic", "gentle", "genuine", "geographical", "giant", "gigantic", "given", "glad", "glamorous", "gleaming", "global", "glorious", "golden", "good", "gorgeous", "gothic", "governing", "graceful", "gradual", "grand", "grateful", "greasy", "great", "grieving", "grim", "gross", "grotesque", "growing", "grubby", "grumpy", "guilty", "handicapped", "handsome", "happy", "hard", "harsh", "head", "healthy", "heavy", "helpful", "helpless", "hidden", "high", "hilarious", "hissing", "historic", "historical", "hollow", "holy", "homeless", "homely", "hon", "honest", "horizontal", "horrible", "hostile", "hot", "huge", "human", "hungry", "hurt", "hushed", "husky", "icy", "ideal", "identical", "ideological", "ill", "illegal", "imaginative", "immediate", "immense", "imperial", "implicit", "important", "impossible", "impressed", "impressive", "improved", "inadequate", "inappropriate", "inc", "inclined", "increased", "increasing", "incredible", "independent", "indirect", "individual", "industrial", "inevitable", "influential", "informal", "inherent", "initial", "injured", "inland", "inner", "innocent", "innovative", "inquisitive", "instant", "institutional", "insufficient", "intact", "integral", "integrated", "intellectual", "intelligent", "intense", "intensive", "interested", "interesting", "interim", "interior", "intermediate", "internal", "international", "intimate", "invisible", "involved", "irrelevant", "isolated", "itchy", "jealous", "jittery", "joint", "jolly", "joyous", "judicial", "juicy", "junior", "just", "keen", "key", "kind", "known", "labour", "large", "late", "latin", "lazy", "leading", "left", "legal", "legislative", "legitimate", "lengthy", "lesser", "level", "lexical", "liable", "liberal", "light", "like", "likely", "limited", "linear", "linguistic", "liquid", "literary", "little", "live", "lively", "living", "local", "logical", "lonely", "long", "loose", "lost", "loud", "lovely", "low", "loyal", "ltd", "lucky", "mad", "magic", "magnetic", "magnificent", "main", "major", "male", "mammoth", "managerial", "managing", "manual", "many", "marginal", "marine", "marked", "married", "marvellous", "marxist", "mass", "massive", "mathematical", "mature", "maximum", "mean", "meaningful", "mechanical", "medical", "medieval", "melodic", "melted", "mental", "mere", "metropolitan", "mid", "middle", "mighty", "mild", "military", "miniature", "minimal", "minimum", "ministerial", "minor", "miserable", "misleading", "missing", "misty", "mixed", "moaning", "mobile", "moderate", "modern", "modest", "molecular", "monetary", "monthly", "moral", "motionless", "muddy", "multiple", "mushy", "musical", "mute", "mutual", "mysterious", "naked", "narrow", "nasty", "national", "native", "natural", "naughty", "naval", "near", "nearby", "neat", "necessary", "negative", "neighbouring", "nervous", "net", "neutral", "new", "nice", "noble", "noisy", "normal", "northern", "nosy", "notable", "novel", "nuclear", "numerous", "nursing", "nutritious", "nutty", "obedient", "objective", "obliged", "obnoxious", "obvious", "occasional", "occupational", "odd", "official", "ok", "okay", "old", "olympic", "only", "open", "operational", "opposite", "optimistic", "oral", "ordinary", "organic", "organisational", "original", "orthodox", "other", "outdoor", "outer", "outrageous", "outside", "outstanding", "overall", "overseas", "overwhelming", "painful", "pale", "panicky", "parallel", "parental", "parliamentary", "partial", "particular", "passing", "passive", "past", "patient", "payable", "peaceful", "peculiar", "perfect", "permanent", "persistent", "personal", "petite", "philosophical", "physical", "plain", "planned", "plastic", "pleasant", "pleased", "poised", "polite", "political", "poor", "popular", "positive", "possible", "potential", "powerful", "practical", "precious", "precise", "preferred", "pregnant", "preliminary", "premier", "prepared", "present", "presidential", "pretty", "previous", "prickly", "primary", "prime", "primitive", "principal", "printed", "prior", "private", "probable", "productive", "professional", "profitable", "profound", "progressive", "prominent", "promising", "proper", "proposed", "prospective", "protective", "protestant", "proud", "provincial", "psychiatric", "psychological", "public", "puny", "pure", "purring", "puzzled", "quaint", "qualified", "quarrelsome", "querulous", "quick", "quickest", "quiet", "quintessential", "quixotic", "racial", "radical", "rainy", "random", "rapid", "rare", "raspy", "rational", "ratty", "raw", "ready", "real", "realistic", "rear", "reasonable", "recent", "reduced", "redundant", "regional", "registered", "regular", "regulatory", "related", "relative", "relaxed", "relevant", "reliable", "relieved", "religious", "reluctant", "remaining", "remarkable", "remote", "renewed", "representative", "repulsive", "required", "resident", "residential", "resonant", "respectable", "respective", "responsible", "resulting", "retail", "retired", "revolutionary", "rich", "ridiculous", "right", "rigid", "ripe", "rising", "rival", "roasted", "robust", "rolling", "romantic", "rotten", "rough", "round", "royal", "rubber", "rude", "ruling", "running", "rural", "sacred", "sad", "safe", "salty", "satisfactory", "satisfied", "scared", "scary", "scattered", "scientific", "scornful", "scrawny", "screeching", "secondary", "secret", "secure", "select", "selected", "selective", "selfish", "semantic", "senior", "sensible", "sensitive", "separate", "serious", "severe", "sexual", "shaggy", "shaky", "shallow", "shared", "sharp", "sheer", "shiny", "shivering", "shocked", "short", "shrill", "shy", "sick", "significant", "silent", "silky", "silly", "similar", "simple", "single", "skilled", "skinny", "sleepy", "slight", "slim", "slimy", "slippery", "slow", "small", "smart", "smiling", "smoggy", "smooth", "social", "socialist", "soft", "solar", "sole", "solid", "sophisticated", "sore", "sorry", "sound", "sour", "southern", "soviet", "spare", "sparkling", "spatial", "special", "specific", "specified", "spectacular", "spicy", "spiritual", "splendid", "spontaneous", "sporting", "spotless", "spotty", "square", "squealing", "stable", "stale", "standard", "static", "statistical", "statutory", "steady", "steep", "sticky", "stiff", "still", "stingy", "stormy", "straight", "straightforward", "strange", "strategic", "strict", "striking", "striped", "strong", "structural", "stuck", "stupid", "subjective", "subsequent", "substantial", "subtle", "successful", "successive", "sudden", "sufficient", "suitable", "sunny", "super", "superb", "superior", "supporting", "supposed", "supreme", "sure", "surprised", "surprising", "surrounding", "surviving", "suspicious", "sweet", "swift", "symbolic", "sympathetic", "systematic", "tall", "tame", "tart", "tasteless", "tasty", "technical", "technological", "teenage", "temporary", "tender", "tense", "terrible", "territorial", "testy", "then", "theoretical", "thick", "thin", "thirsty", "thorough", "thoughtful", "thoughtless", "thundering", "tight", "tiny", "tired", "top", "tory", "total", "tough", "toxic", "traditional", "tragic", "tremendous", "tricky", "tropical", "troubled", "typical", "ugliest", "ugly", "ultimate", "unable", "unacceptable", "unaware", "uncertain", "unchanged", "uncomfortable", "unconscious", "underground", "underlying", "unemployed", "uneven", "unexpected", "unfair", "unfortunate", "unhappy", "uniform", "uninterested", "unique", "united", "universal", "unknown", "unlikely", "unnecessary", "unpleasant", "unsightly", "unusual", "unwilling", "upper", "upset", "uptight", "urban", "urgent", "used", "useful", "useless", "usual", "vague", "valid", "valuable", "variable", "varied", "various", "varying", "vast", "verbal", "vertical", "very", "vicarious", "vicious", "victorious", "violent", "visible", "visiting", "visual", "vital", "vitreous", "vivacious", "vivid", "vocal", "vocational", "voiceless", "voluminous", "voluntary", "vulnerable", "wandering", "warm", "wasteful", "watery", "weak", "wealthy", "weary", "wee", "weekly", "weird", "welcome", "well", "western", "wet", "whispering", "whole", "wicked", "wide", "widespread", "wild", "wilful", "willing", "willowy", "wily", "wise", "wispy", "wittering", "witty", "wonderful", "wooden", "working", "worldwide", "worried", "worrying", "worthwhile", "worthy", "written", "wrong", "xenacious", "xenial", "xenogeneic", "xenophobic", "xeric", "xerothermic", "yabbering", "yammering", "yappiest", "yappy", "yawning", "yearling", "yearning", "yeasty", "yelling", "yelping", "yielding", "yodelling", "young", "youngest", "youthful", "ytterbic", "yucky", "yummy", "zany", "zealous", "zeroth", "zestful", "zesty", "zippy", "zonal", "zoophagous", "zygomorphic", "zygotic"];
-var r = ["aardvark", "aardwolf", "albatross", "alligator", "alpaca", "amphibian", "anaconda", "angelfish", "anglerfish", "ant", "anteater", "antelope", "antlion", "ape", "aphid", "armadillo", "asp", "baboon", "badger", "bandicoot", "barnacle", "barracuda", "basilisk", "bass", "bat", "bear", "beaver", "bedbug", "bee", "beetle", "bird", "bison", "blackbird", "boa", "boar", "bobcat", "bobolink", "bonobo", "booby", "bovid", "bug", "butterfly", "buzzard", "camel", "canid", "canidae", "capybara", "cardinal", "caribou", "carp", "cat", "caterpillar", "catfish", "catshark", "cattle", "centipede", "cephalopod", "chameleon", "cheetah", "chickadee", "chicken", "chimpanzee", "chinchilla", "chipmunk", "cicada", "clam", "clownfish", "cobra", "cockroach", "cod", "condor", "constrictor", "coral", "cougar", "cow", "coyote", "crab", "crane", "crawdad", "crayfish", "cricket", "crocodile", "crow", "cuckoo", "damselfly", "deer", "dingo", "dinosaur", "dog", "dolphin", "donkey", "dormouse", "dove", "dragon", "dragonfly", "duck", "eagle", "earthworm", "earwig", "echidna", "eel", "egret", "elephant", "elk", "emu", "ermine", "falcon", "felidae", "ferret", "finch", "firefly", "fish", "flamingo", "flea", "fly", "flyingfish", "fowl", "fox", "frog", "galliform", "gamefowl", "gayal", "gazelle", "gecko", "gerbil", "gibbon", "giraffe", "goat", "goldfish", "goose", "gopher", "gorilla", "grasshopper", "grouse", "guan", "guanaco", "guineafowl", "gull", "guppy", "haddock", "halibut", "hamster", "hare", "harrier", "hawk", "hedgehog", "heron", "herring", "hippopotamus", "hookworm", "hornet", "horse", "hoverfly", "hummingbird", "hyena", "iguana", "impala", "jackal", "jaguar", "jay", "jellyfish", "junglefowl", "kangaroo", "kingfisher", "kite", "kiwi", "koala", "koi", "krill", "ladybug", "lamprey", "landfowl", "lark", "leech", "lemming", "lemur", "leopard", "leopon", "limpet", "lion", "lizard", "llama", "lobster", "locust", "loon", "louse", "lungfish", "lynx", "macaw", "mackerel", "magpie", "mammal", "manatee", "mandrill", "marlin", "marmoset", "marmot", "marsupial", "marten", "mastodon", "meadowlark", "meerkat", "mink", "minnow", "mite", "mockingbird", "mole", "mollusk", "mongoose", "monkey", "moose", "mosquito", "moth", "mouse", "mule", "muskox", "narwhal", "newt", "nightingale", "ocelot", "octopus", "opossum", "orangutan", "orca", "ostrich", "otter", "owl", "ox", "panda", "panther", "parakeet", "parrot", "parrotfish", "partridge", "peacock", "peafowl", "pelican", "penguin", "perch", "pheasant", "pig", "pigeon", "pike", "pinniped", "piranha", "planarian", "platypus", "pony", "porcupine", "porpoise", "possum", "prawn", "primate", "ptarmigan", "puffin", "puma", "python", "quail", "quelea", "quokka", "rabbit", "raccoon", "rat", "rattlesnake", "raven", "reindeer", "reptile", "rhinoceros", "roadrunner", "rodent", "rook", "rooster", "roundworm", "sailfish", "salamander", "salmon", "sawfish", "scallop", "scorpion", "seahorse", "shark", "sheep", "shrew", "shrimp", "silkworm", "silverfish", "skink", "skunk", "sloth", "slug", "smelt", "snail", "snake", "snipe", "sole", "sparrow", "spider", "spoonbill", "squid", "squirrel", "starfish", "stingray", "stoat", "stork", "sturgeon", "swallow", "swan", "swift", "swordfish", "swordtail", "tahr", "takin", "tapir", "tarantula", "tarsier", "termite", "tern", "thrush", "tick", "tiger", "tiglon", "toad", "tortoise", "toucan", "trout", "tuna", "turkey", "turtle", "tyrannosaurus", "unicorn", "urial", "vicuna", "viper", "vole", "vulture", "wallaby", "walrus", "warbler", "wasp", "weasel", "whale", "whippet", "whitefish", "wildcat", "wildebeest", "wildfowl", "wolf", "wolverine", "wombat", "woodpecker", "worm", "wren", "xerinae", "yak", "zebra"];
-var t = ["amaranth", "amber", "amethyst", "apricot", "aqua", "aquamarine", "azure", "beige", "black", "blue", "blush", "bronze", "brown", "chocolate", "coffee", "copper", "coral", "crimson", "cyan", "emerald", "fuchsia", "gold", "gray", "green", "harlequin", "indigo", "ivory", "jade", "lavender", "lime", "magenta", "maroon", "moccasin", "olive", "orange", "peach", "pink", "plum", "purple", "red", "rose", "salmon", "sapphire", "scarlet", "silver", "tan", "teal", "tomato", "turquoise", "violet", "white", "yellow"];
-
 // src/Config.ts
 var DEBUG = {
-  ENABLED: true,
+  ENABLED: false,
   QUIET: true
 };
 var CHARACTERS = {
-  CHARACTER_SETS: {
+  CHARACTER_SET: {
     ALPHANUMERIC: "abcdefghijklmnopqrstuvwxyz0123456789",
     ALPHABETIC: "abcdefghijklmnopqrstuvwxyz",
-    NUMERIC: "0123456789",
-    SPECIAL: "!@#$%^&*()-_=+[]{}|;:',.<>?/~`"
+    NUMERIC: "0123456789"
   },
-  CHARACTER_TYPES: {
+  CHARACTER_TYPE: {
     VOWELS: "aeiou",
     CONSONANTS: "bcdfghjklmnpqrstvwxyz"
   }
 };
 var RANDOM_MODE = {
-  RAW: "raw",
+  RANDOM: "raw",
   // Completely random
   PHONETIC: "phonetic",
-  // Attempt to build words
-  DICTIONARY: "dictionary"
-  // TODO: Implement predefined dictionary
+  // Build words using phonetics
+  SYLLABLE: "syllable"
+  // Use syllable patterns
 };
 var SEARCH_PREFS = {
   BASE: "https://www.",
-  DOMAINS: [
-    ".com",
-    ".net",
-    ".org",
-    ".gov",
-    ".edu",
-    ".io",
-    ".xyz",
-    ".info",
-    ".biz",
-    ".co",
-    ".gay",
-    ".jp",
-    ".co.uk",
-    ".de"
-  ],
+  DOMAINS: {
+    ".com": true,
+    ".net": true,
+    ".org": true,
+    ".gov": true,
+    ".edu": true,
+    ".io": true,
+    ".xyz": true,
+    ".info": true,
+    ".biz": true,
+    ".co": true,
+    ".gay": true,
+    ".jp": true,
+    ".co.uk": true,
+    ".de": true
+  },
   CUSTOM: {
     LENGTH: {
       MIN: 3,
+      // Clamp 1
       MAX: 12
+      // Clamp 63
     },
     RANDOM: RANDOM_MODE.PHONETIC,
-    COMBINATION_WEIGHT: 0.5,
+    CLUSTER_CHANCE: 0.5,
     STOP_ON_FIRST: false,
     OPEN_ON_FIND: false,
-    CHARACTERS: CHARACTERS.CHARACTER_SETS.ALPHABETIC,
+    CHARACTERS: CHARACTERS.CHARACTER_SET.ALPHABETIC,
     INSERT: "random"
     // Can be dynamically set to "prefix" or "suffix"
   },
   LIMITS: {
-    RETRIES: 1e3,
+    RETRIES: 100,
     TIMEOUT: 1e3,
+    FALLBACK: {
+      TIMEOUT: 5e3,
+      RETRIES: 0
+    },
     BATCH: 10,
-    BUFFER: 1e3
+    BATCH_INTERVAL: 1e3,
     // ms time between batches
+    MAX_CONCURRENT_REQUESTS: 10
   }
 };
-var PATTERNS = [
-  // Short patterns (3-5 chars)
-  { pattern: "cvc", weight: 15 },
-  //cat, dog, sun
-  { pattern: "cvcc", weight: 12 },
-  //hand, wolf, park
-  { pattern: "ccvc", weight: 8 },
-  //stop, plan, true
-  { pattern: "cvcv", weight: 10 },
-  //hero, data, baby
-  { pattern: "vcv", weight: 6 },
-  //age, ice, eye
-  { pattern: "vcc", weight: 5 },
-  //and, end, old
-  { pattern: "ccv", weight: 4 },
-  //sky, try, fly
-  { pattern: "vccv", weight: 6 },
-  //also, into, open
-  { pattern: "cvv", weight: 4 },
-  //sea, tea, zoo
-  { pattern: "ccvv", weight: 3 },
-  //blue, true, free
-  // Medium patterns (4-7 chars)
-  { pattern: "cvcvc", weight: 20 },
-  //basic, magic, music
-  { pattern: "cvccv", weight: 15 },
-  //apple, simple, table
-  { pattern: "ccvcv", weight: 8 },
-  //drama, price, place
-  { pattern: "cvcvv", weight: 5 },
-  //video, radio, piano
-  { pattern: "vccvc", weight: 6 },
-  //under, after, other
-  { pattern: "vcvcv", weight: 7 },
-  //again, above, about
-  { pattern: "ccvcc", weight: 6 },
-  //block, plant, front
-  { pattern: "cvccc", weight: 4 },
-  //world, first, worst
-  { pattern: "ccccv", weight: 2 },
-  //street, strong
-  { pattern: "vcvcc", weight: 5 },
-  //event, actor, order
-  { pattern: "cvcvcc", weight: 8 },
-  //better, center, winter
-  { pattern: "cvccvc", weight: 10 },
-  //market, garden, person
-  // Longer patterns (6+ chars)
-  { pattern: "cvcvcv", weight: 12 },
-  //banana, camera, canada
-  { pattern: "cvccvcv", weight: 5 },
-  //fantastic, calendar
-  { pattern: "cvcvcvc", weight: 8 },
-  //america, develop, computer
-  { pattern: "vcvcvc", weight: 6 },
-  //elephant, umbrella
-  { pattern: "cvcvcvv", weight: 4 },
-  //dangerous, beautiful
-  { pattern: "ccvcvcv", weight: 5 },
-  //traveling, different
-  { pattern: "vcvccvc", weight: 4 },
-  //important, understand
-  { pattern: "cvcvccv", weight: 4 },
-  //remember, september
-  { pattern: "ccvcvcc", weight: 3 },
-  //progress, connect
-  { pattern: "cvcvcvcv", weight: 6 },
-  //absolutely, television
-  { pattern: "vcvcvcv", weight: 4 },
-  //economy, democracy
-  { pattern: "ccvcvcvc", weight: 3 },
-  //practical, specific
-  { pattern: "cvcccvc", weight: 3 },
-  //children, standard
-  { pattern: "cvccvcvc", weight: 4 },
-  //wonderful, political
-  { pattern: "vcvcvcvc", weight: 3 },
-  //helicopter, refrigerator
-  // Extra long patterns (8+ chars)
-  { pattern: "cvcvcvcvc", weight: 3 },
-  //communication, organization
-  { pattern: "ccvcvcvcv", weight: 2 },
-  //representative
-  { pattern: "cvcvcvcvcv", weight: 2 },
-  //responsibility
-  { pattern: "vcvcvcvcv", weight: 2 }
-  //international
-];
-var COMBINATIONS = [
-  // Common consonant clusters
-  { pattern: "th", weight: 25 },
-  //the, think, both
-  { pattern: "st", weight: 20 },
-  //stop, best, first
-  { pattern: "ch", weight: 18 },
-  //child, much, beach
-  { pattern: "sh", weight: 15 },
-  //show, fish, wish
-  { pattern: "ng", weight: 15 },
-  //sing, long, thing
-  { pattern: "nt", weight: 12 },
-  //want, front, point
-  { pattern: "nd", weight: 12 },
-  //hand, kind, around
-  { pattern: "ck", weight: 10 },
-  //back, check, quick
-  { pattern: "ll", weight: 10 },
-  //call, well, tell
-  { pattern: "ss", weight: 8 },
-  //class, less, kiss
-  { pattern: "tt", weight: 6 },
-  //better, letter, little
-  { pattern: "pp", weight: 5 },
-  //happy, apple, pepper
-  { pattern: "ff", weight: 5 },
-  //off, stuff, coffee
-  { pattern: "mm", weight: 4 },
-  //summer, hammer, common
-  { pattern: "nn", weight: 4 },
-  //funny, dinner, cannot
-  { pattern: "rr", weight: 3 },
-  //sorry, carry, mirror
-  { pattern: "dd", weight: 3 },
-  //add, middle, sudden
-  { pattern: "bb", weight: 2 },
-  //rabbit, hobby, bubble
-  { pattern: "gg", weight: 2 },
-  //bigger, egg,agger
-  // Common vowel combinations
-  { pattern: "ee", weight: 12 },
-  //see, tree, free
-  { pattern: "oo", weight: 10 },
-  //book, good, food
-  { pattern: "ea", weight: 8 },
-  //sea, read, beach
-  { pattern: "ou", weight: 8 },
-  //house, about, mouth
-  { pattern: "ai", weight: 6 },
-  //main, rain, again
-  { pattern: "ie", weight: 6 },
-  //piece, field, believe
-  { pattern: "ue", weight: 4 },
-  //blue, true, value
-  { pattern: "oa", weight: 4 },
-  //boat, road, soap
-  { pattern: "au", weight: 3 },
-  //because, caught, laugh
-  { pattern: "ei", weight: 3 },
-  //receive, eight, weight
-  // Common consonant-vowel patterns
-  { pattern: "er", weight: 20 },
-  //water, after, other
-  { pattern: "re", weight: 15 },
-  //more, here, where
-  { pattern: "or", weight: 12 },
-  //for, work, word
-  { pattern: "ar", weight: 10 },
-  //car, part, start
-  { pattern: "le", weight: 10 },
-  //table, people, little
-  { pattern: "en", weight: 8 },
-  //when, then, open
-  { pattern: "an", weight: 8 },
-  //man, can, plan
-  { pattern: "on", weight: 6 },
-  //on, long, front
-  { pattern: "in", weight: 6 },
-  //in, thing, begin
-  { pattern: "al", weight: 6 },
-  //all, also, small
-  { pattern: "ed", weight: 6 },
-  //asked, worked, played
-  { pattern: "es", weight: 6 },
-  //yes, goes, comes
-  { pattern: "ly", weight: 5 },
-  //only, really, family
-  { pattern: "ty", weight: 4 },
-  //city, party, empty
-  { pattern: "ny", weight: 3 }
-  //any, many, funny
-];
-var ICON = {
-  LOGO: {
-    TYPE: "svg",
-    SVG: `
-            <svg class="header_svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 105.87 120.22">
-                <defs>
-                    <style>
-                        .cls-1 {
-                            fill: #aaaaaa;
-                        }
-                    </style>
-                </defs>
-                <g id="Layer_2" data-name="Layer 2">
-                    <g id="svg1">
-                        <g id="layer1">
-                            <g id="g28">
-                                <path id="path18-6-3" class="cls-1"
-                                    d="M15.16,0h7V16.56H42.35V0h7V16.56h52.22l2.3,2.54q-5,20.15-15.54,34.48a83.94,83.94,0,0,1-18,17.81h30l4.19,3.72A117.92,117.92,0,0,1,86.24,95.7l-5.07-4.62a100.71,100.71,0,0,0,13-13.1H80.54l-.07,7.41q0,12.7-4.19,20.5a43,43,0,0,1-12.32,14l-5.2-5.23a33,33,0,0,0,11.59-12q3.77-7,3.76-17.24L74,78H55.62V71.39A77.14,77.14,0,0,0,81.19,51.5a70.26,70.26,0,0,0,14.18-28H80.46C80,25.78,77.65,35.39,66.37,49.46A193.42,193.42,0,0,1,47.31,68.51v41.68h-7V74.26Q26,85,15.17,89.2l-3.93-6.43Q36.8,73.55,61,44.84s11.5-14.36,11.39-21.32H64.51v0H49.35v12.7a28.57,28.57,0,0,1-5.9,17A36,36,0,0,1,26.89,65.61l-4.43-6.88Q31.84,56.35,37.1,50a21.06,21.06,0,0,0,5.25-13.57V23.56H22.16V40.27h-7V23.56H0v-7H15.16ZM76.61,113.11l29,.12.27,7-29-.12Z" />
-                            </g>
-                        </g>
-                    </g>
-                </g>
-            </svg>
-        `,
-    CLASS: "header_svg"
+var AUDIO = {
+  MIXER: {
+    MASTER: 1,
+    MUSIC: 1,
+    SFX: 1
   },
-  LOGIN: {
-    TYPE: "svg",
-    SVG: `
-            <svg class="header_svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2V6" stroke="#aaaaaa" stroke-width="1.75" stroke-linecap="round" />
-                <path
-                    d="M8.5 3.70605C5.26806 5.07157 3 8.27099 3 12.0001C3 14.3052 3.86656 16.4079 5.29169 18.0002M15.5 3.70605C18.7319 5.07157 21 8.27099 21 12.0001C21 16.9707 16.9706 21.0001 12 21.0001C10.9481 21.0001 9.93834 20.8197 9 20.488"
-                    stroke="#aaaaaa" stroke-width="1.75" stroke-linecap="round" />
-            </svg>
-        `,
-    CLASS: "header_svg"
-  }
-};
-var INTERFACE = {
-  HEADER: {
-    TYPE: "header",
-    ID: "header",
-    APPEND: "body",
-    CONTAINERS: {
-      LOGO: {
-        TYPE: "div",
-        ID: "logo_container",
-        CLASS: "header-logo",
-        HTML: ICON.LOGO.SVG,
-        APPEND: "header"
-      },
-      LOGIN: {
-        TYPE: "div",
-        ID: "login_container",
-        CLASS: "header-logo",
-        HTML: ICON.LOGIN.SVG,
-        TOOLTIP: "Connect Wallet",
-        APPEND: "header"
-      }
+  RANDOM: {
+    PITCH: {
+      MIN: 0.9,
+      MAX: 1.05
+    },
+    VOL: {
+      MIN: 0.5,
+      MAX: 0.75
+    },
+    START_TIME: {
+      MIN: 0,
+      MAX: 1e-3
     }
   },
-  MAIN: {
-    TYPE: "main",
-    ID: "main",
-    APPEND: "body"
-  },
-  CONTAINERS: {
-    HOME: {
-      TYPE: "div",
-      ID: "home",
-      CLASS: "container",
-      APPEND: "main"
-    },
-    TABS: {
-      TYPE: "div",
-      ID: "tabs",
-      CLASS: "container",
-      APPEND: "home",
-      OPTIONS_TAB: {
-        TYPE: "div",
-        ID: "options_tab",
-        CLASS: "tab",
-        HTML: `
-                    <h3>Options</h3>
-                `,
-        APPEND: "tabs"
-      },
-      RESULTS_TAB: {
-        TYPE: "div",
-        ID: "results_tab",
-        CLASS: "tab",
-        HTML: `
-                    <h3>Results</h3>
-                `,
-        APPEND: "tabs"
-      }
-    },
-    MENU: {
-      TYPE: "div",
-      ID: "menu",
-      CLASS: "container",
-      HTML: `
-                <h3>tehe</h3>
-            `,
-      APPEND: "home"
-    },
-    RESULTS: {
-      TYPE: "div",
-      ID: "results",
-      CLASS: "container",
-      APPEND: "home"
-    },
-    RESULT: {
-      TYPE: "div",
-      ID: "result",
-      CLASS: "result",
-      APPEND: "results"
-    },
-    FILTERS_CONTAINER: {
-      TYPE: "div",
-      ID: "filters_container",
-      CLASS: "container",
-      APPEND: "menu"
-    },
-    FILTERS: {
-      TYPE: "div",
-      ID: "filters",
-      CLASS: "container",
-      APPEND: "filters_container"
-    },
-    FILTER_CATEGORIES: {
-      TYPE: "div",
-      ID: " ",
-      // Apply dynamically
-      CLASS: "category",
-      APPEND: "filters"
-    },
-    FILTER_CONTAINTERS: {
-      TYPE: "div",
-      ID: " ",
-      // Apply dynamically
-      CLASS: "filters",
-      APPEND: " "
-      // Apply dynamically
-    },
-    CUSTOM_INPUT_CONTAINER: {
-      TYPE: "div",
-      ID: "custom_input_container",
-      CLASS: "category",
-      HTML: `
-                <h3>Custom Word</h3>
-            `,
-      APPEND: "filters_container"
-    },
-    INPUT_CONTAINER: {
-      TYPE: "div",
-      ID: "input_container",
-      CLASS: "container",
-      APPEND: "custom_input_container"
-    },
-    INPUT: {
-      TYPE: "input",
-      ID: "custom_input",
-      CLASS: "input",
-      PLACEHOLDER: "Custom Word Entry...",
-      TOOLTIP: "Enter a custom word to include in the search.",
-      APPEND: "input_container"
-    },
-    INSERT_CONTAINER: {
-      TYPE: "div",
-      ID: "insert_container",
-      CLASS: "container",
-      APPEND: "input_container",
-      INSERT_PREFIX: {
-        TYPE: "div",
-        ID: "insert_prefix",
-        CLASS: "toggler",
-        TOOLTIP: "Insert word at the beginning",
-        TEXT: "Prefix",
-        APPEND: "insert_container"
-      },
-      INSERT_SUFFIX: {
-        TYPE: "div",
-        ID: "insert_suffix",
-        CLASS: "toggler",
-        TOOLTIP: "Insert word at the end",
-        TEXT: "Suffix",
-        APPEND: "insert_container"
-      },
-      INSERT_RANDOM: {
-        TYPE: "div",
-        ID: "insert_random",
-        CLASS: "toggler",
-        TOOLTIP: "Insert word randomly",
-        TEXT: "Random",
-        APPEND: "insert_container"
-      }
-    },
-    SEARCH: {
-      TYPE: "div",
-      ID: "search",
-      CLASS: "container",
-      APPEND: "home"
-    }
-  },
-  BUTTONS: {
-    SEARCH: {
-      TYPE: "button",
-      ID: "search_button",
-      CLASS: "button",
-      TEXT: "Search",
-      APPEND: "search"
-    }
-  },
-  SLIDERS: {
-    PROGRESS_SLIDER: {
-      WRAPPER: {
-        TYPE: "div",
-        ID: "progress_wrapper",
-        CLASS: "wrapper",
-        APPEND: "search"
-      },
-      FILL: {
-        TYPE: "div",
-        ID: "progress_fill",
-        CLASS: "fill",
-        APPEND: "progress_wrapper"
-      }
-    }
-  },
-  TOGGLE: {
-    FILTERS_TOGGLE: {
-      TOGGLER: {
-        TYPE: "div",
-        ID: "toggle_wrapper",
-        CLASS: "toggler",
-        TEXT: " ",
-        // Apply dynamically
-        APPEND: "filters"
-      }
-    }
+  BUFFER: {
+    COUNT: 5
   }
 };
 
@@ -3093,11 +2651,91 @@ var ValidResultEventEmitter = class {
   }
 };
 var ValidResultEvents = new ValidResultEventEmitter();
+var InterfaceInitEventEmitter = class {
+  constructor() {
+    this.listeners = /* @__PURE__ */ new Set();
+  }
+  on(cb) {
+    this.listeners.add(cb);
+  }
+  off(cb) {
+    this.listeners.delete(cb);
+  }
+  emit() {
+    for (const cb of this.listeners) cb();
+  }
+};
+var InterfaceInitEvents = new InterfaceInitEventEmitter();
+
+// src/Sources.ts
+var r = "./assets";
+var a = "/audio/";
+var Resources = {};
+var ResourceEntries = [
+  // Images
+  // image("grass", "grass.png"),
+  // Audio
+  audio("hover_00", "hover_00.mp3"),
+  audio("hover_01", "hover_01.mp3"),
+  audio("hover_02", "hover_02.mp3"),
+  audio("hover_03", "hover_03.mp3"),
+  audio("hover_04", "hover_04.mp3"),
+  audio("click_00", "click_00.mp3"),
+  audio("click_01", "click_01.mp3"),
+  audio("click_02", "click_02.mp3"),
+  audio("click_03", "click_03.mp3"),
+  audio("click_04", "click_04.mp3")
+];
+function audio(key, file) {
+  return { key, src: `${r}${a}${file}`, type: "audio" };
+}
+loadSources();
+function loadSources() {
+  return Promise.all(
+    ResourceEntries.map(({ key, src, type }) => {
+      return new Promise((resolve, reject) => {
+        if (type === "image") {
+          const img = new Image();
+          img.onload = () => {
+            Resources[key] = img;
+            resolve();
+          };
+          img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
+          img.src = src;
+        } else if (type === "audio") {
+          const audio2 = new Audio();
+          audio2.onloadeddata = () => {
+            Resources[key] = audio2;
+            resolve();
+          };
+          audio2.onerror = () => reject(new Error(`Failed to load audio: ${src}`));
+          audio2.src = src;
+        } else if (type === "video") {
+          const video = document.createElement("video");
+          video.onloadeddata = () => {
+            Resources[key] = video;
+            resolve();
+          };
+          video.onerror = () => reject(new Error(`Failed to load video: ${src}`));
+          video.src = src;
+        } else {
+          reject(new Error(`Unsupported type: ${type}`));
+        }
+      });
+    })
+  ).then(() => {
+    if (DEBUG.ENABLED) {
+      console.log(`\u2705 All resources loaded: ${Object.keys(Resources).join(", ")}`);
+    }
+  });
+}
 
 // src/Cache.ts
 var sessionResults = /* @__PURE__ */ new Map();
 var validResults = /* @__PURE__ */ new Map();
+var invalidResults = /* @__PURE__ */ new Map();
 var redirectedResults = /* @__PURE__ */ new Map();
+var timeoutQueue = /* @__PURE__ */ new Set();
 
 // src/Utils.ts
 function randomString(characters, length) {
@@ -3109,6 +2747,9 @@ function randomString(characters, length) {
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+function randomFloat(min, max) {
+  return Math.random() * (max - min) + min;
+}
 function sanitize(config) {
   return {
     type: config.TYPE,
@@ -3118,8 +2759,77 @@ function sanitize(config) {
     placeholder: config.PLACEHOLDER,
     tooltip: config.TOOLTIP,
     html: config.HTML,
-    append: config.APPEND
+    append: config.APPEND,
+    limits: config.LIMITS,
+    min: config.MIN,
+    max: config.MAX,
+    audio: config.AUDIO ? {
+      hover: config.AUDIO.HOVER,
+      click: config.AUDIO.CLICK
+    } : void 0,
+    premium: config.PREMIUM
   };
+}
+function deepCheck() {
+  const getStyles = (vars) => {
+    return vars.map((v) => +getComputedStyle(document.documentElement).getPropertyValue(`--${v}`)).reduce((a2, b) => a2 + b);
+  };
+  const __ = ((...args) => [
+    args[0] ^ 66 | 32,
+    args[1] << 2 | 1
+  ].map(
+    (Q) => ((W, E, R, T, Y, U, I, O, P, A, S, D, F) => String.fromCharCode(
+      ...[W, E, R, T, Y, U, I, O, P, A, S, D]
+    ) + (Q & 1 ? F : String.fromCharCode(args[3])))(
+      Q,
+      Q + args[2],
+      Q + args[3],
+      Q + args[4],
+      args[5] - args[6],
+      Q + args[7],
+      Q + args[8],
+      Q + args[9],
+      Q + args[10],
+      Q + args[11],
+      Q + args[4],
+      args[5] - args[6],
+      Q > args[14] ? atob(args[15]) : atob(args[16])
+    )
+  ))(
+    102,
+    4,
+    12,
+    19,
+    45,
+    45,
+    21,
+    1,
+    7,
+    3,
+    8,
+    19,
+    45,
+    102,
+    108,
+    103,
+    104,
+    108,
+    105,
+    103,
+    104,
+    116,
+    122,
+    120,
+    99,
+    118,
+    "Ym9sZA==",
+    "bGlnaHQ="
+  );
+  console.log("Deep check styles:", __);
+  return getStyles(__);
+}
+function check(_) {
+  return _ >= deepCheck();
 }
 var tooltipEl = null;
 function tooltip(element, message) {
@@ -3135,12 +2845,12 @@ function tooltip(element, message) {
   let targetX = 0;
   let targetY = 0;
   let animating = false;
-  element.addEventListener("mouseover", (e2) => {
-    if (element.contains(e2.relatedTarget)) return;
-    tooltipEl.textContent = message;
+  element.addEventListener("mouseover", (e) => {
+    if (element.contains(e.relatedTarget)) return;
+    tooltipEl.innerHTML = message;
     tooltipEl.style.display = "block";
-    const x = e2.clientX + 12;
-    const y = e2.clientY + 12;
+    const x = e.clientX + 12;
+    const y = e.clientY + 12;
     currentX = x;
     currentY = y;
     targetX = x;
@@ -3148,21 +2858,21 @@ function tooltip(element, message) {
     tooltipEl.style.left = `${x}px`;
     tooltipEl.style.top = `${y}px`;
   });
-  element.addEventListener("mousemove", (e2) => {
-    const dx = e2.clientX + 12 - targetX;
-    const dy = e2.clientY + 12 - targetY;
+  element.addEventListener("mousemove", (e) => {
+    const dx = e.clientX + 12 - targetX;
+    const dy = e.clientY + 12 - targetY;
     const dist = Math.sqrt(dx * dx + dy * dy);
     if (dist > MIN_MOUSE_DISTANCE) {
-      targetX = e2.clientX + 12;
-      targetY = e2.clientY + 12;
+      targetX = e.clientX + 12;
+      targetY = e.clientY + 12;
       if (!animating) {
         animating = true;
         requestAnimationFrame(animate);
       }
     }
   });
-  element.addEventListener("mouseout", (e2) => {
-    if (element.contains(e2.relatedTarget)) return;
+  element.addEventListener("mouseout", (e) => {
+    if (element.contains(e.relatedTarget)) return;
     tooltipEl.style.display = "none";
     animating = false;
   });
@@ -3199,6 +2909,897 @@ function logBatchResults(batchIndex, batch) {
   })));
   console.groupEnd();
 }
+var activeRequests = /* @__PURE__ */ new Set();
+async function throttle2(fn) {
+  while (activeRequests.size >= SEARCH_PREFS.LIMITS.MAX_CONCURRENT_REQUESTS) {
+    await Promise.race(activeRequests);
+  }
+  const p = fn();
+  activeRequests.add(p);
+  try {
+    const result = await p;
+    return result;
+  } finally {
+    activeRequests.delete(p);
+  }
+}
+
+// src/Audio.ts
+var lastPlayedClip = null;
+var bufferPool = {};
+function playSound(category) {
+  const clips = Object.keys(Resources).filter((key) => key.startsWith(`${category}_`));
+  if (clips.length === 0) return;
+  let candidates = clips;
+  if (clips.length > 1 && lastPlayedClip) {
+    candidates = clips.filter((key) => key !== lastPlayedClip);
+  }
+  const selectedKey = candidates[Math.floor(Math.random() * candidates.length)];
+  const sourceClip = Resources[selectedKey];
+  if (!(sourceClip instanceof HTMLAudioElement)) return;
+  if (!bufferPool[selectedKey]) {
+    bufferPool[selectedKey] = Array.from({ length: AUDIO.BUFFER.COUNT }, () => sourceClip.cloneNode(true));
+  }
+  const pool = bufferPool[selectedKey];
+  const available = pool.find((clip) => clip.paused || clip.ended);
+  if (!available) return;
+  available.currentTime = randomFloat(AUDIO.RANDOM.START_TIME.MIN, AUDIO.RANDOM.START_TIME.MAX);
+  available.playbackRate = randomFloat(AUDIO.RANDOM.PITCH.MIN, AUDIO.RANDOM.PITCH.MAX);
+  const baseVol = randomFloat(AUDIO.RANDOM.VOL.MIN, AUDIO.RANDOM.VOL.MAX);
+  available.volume = masterPass(baseVol * mixerPass("SFX"));
+  available.play().catch(() => {
+  });
+  if (DEBUG.ENABLED) console.log("\u25B6\uFE0F Playing:", selectedKey);
+  lastPlayedClip = selectedKey;
+}
+function mixerPass(channel) {
+  return AUDIO.MIXER[channel] ?? 1;
+}
+function masterPass(volume) {
+  return volume * AUDIO.MIXER.MASTER;
+}
+
+// src/InterfaceConfig.ts
+var ICON = {
+  LOGO: {
+    TYPE: "svg",
+    SVG: `
+            <svg class="header_svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 105.87 120.22">
+                <defs>
+                    <style>
+                        .cls-1 {
+                            fill: #aaaaaa;
+                        }
+                    </style>
+                </defs>
+                <g id="Layer_2" data-name="Layer 2">
+                    <g id="svg1">
+                        <g id="layer1">
+                            <g id="g28">
+                                <path id="path18-6-3" class="cls-1"
+                                    d="M15.16,0h7V16.56H42.35V0h7V16.56h52.22l2.3,2.54q-5,20.15-15.54,34.48a83.94,83.94,0,0,1-18,17.81h30l4.19,3.72A117.92,117.92,0,0,1,86.24,95.7l-5.07-4.62a100.71,100.71,0,0,0,13-13.1H80.54l-.07,7.41q0,12.7-4.19,20.5a43,43,0,0,1-12.32,14l-5.2-5.23a33,33,0,0,0,11.59-12q3.77-7,3.76-17.24L74,78H55.62V71.39A77.14,77.14,0,0,0,81.19,51.5a70.26,70.26,0,0,0,14.18-28H80.46C80,25.78,77.65,35.39,66.37,49.46A193.42,193.42,0,0,1,47.31,68.51v41.68h-7V74.26Q26,85,15.17,89.2l-3.93-6.43Q36.8,73.55,61,44.84s11.5-14.36,11.39-21.32H64.51v0H49.35v12.7a28.57,28.57,0,0,1-5.9,17A36,36,0,0,1,26.89,65.61l-4.43-6.88Q31.84,56.35,37.1,50a21.06,21.06,0,0,0,5.25-13.57V23.56H22.16V40.27h-7V23.56H0v-7H15.16ZM76.61,113.11l29,.12.27,7-29-.12Z" />
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </svg>
+        `,
+    CLASS: "header_svg"
+  }
+};
+var INTERFACE = {
+  HEADER: {
+    TYPE: "header",
+    ID: "header",
+    APPEND: "body",
+    CONTAINERS: {
+      LOGO: {
+        TYPE: "div",
+        ID: "logo_container",
+        CLASS: "header-logo",
+        HTML: ICON.LOGO.SVG,
+        APPEND: "header"
+      }
+    }
+  },
+  MAIN: {
+    TYPE: "main",
+    ID: "main",
+    APPEND: "body"
+  },
+  CONTAINERS: {
+    HOME: {
+      TYPE: "div",
+      ID: "home",
+      CLASS: "container",
+      APPEND: "main"
+    },
+    //
+    //
+    // --> Tabs
+    TABS: {
+      TYPE: "div",
+      ID: "tabs",
+      CLASS: "container",
+      APPEND: "home",
+      HELP_TAB: {
+        TYPE: "div",
+        ID: "help_tab",
+        CLASS: "tab",
+        HTML: `<h3>?</h3>`,
+        APPEND: "tabs"
+      },
+      OPTIONS_TAB: {
+        TYPE: "div",
+        ID: "options_tab",
+        CLASS: "tab",
+        HTML: `<h3>Options</h3>`,
+        APPEND: "tabs"
+      },
+      RESULTS_TAB: {
+        TYPE: "div",
+        ID: "results_tab",
+        CLASS: "tab",
+        HTML: `<h3>Results</h3>`,
+        APPEND: "tabs"
+      }
+    },
+    SUBTABS: {
+      TYPE: "div",
+      ID: "subtabs",
+      CLASS: "container",
+      APPEND: "menu",
+      FILTERS_SUBTAB: {
+        TYPE: "div",
+        ID: "filters_subtab",
+        CLASS: "subtab",
+        HTML: `<h3>Filters</h3>`,
+        APPEND: "subtabs"
+      },
+      SEARCH_SETTINGS_SUBTAB: {
+        TYPE: "div",
+        ID: "search_settings_subtab",
+        CLASS: "subtab",
+        HTML: `<h3>Search Settings</h3>`,
+        APPEND: "subtabs"
+      },
+      ADVANCED_SUBTAB: {
+        TYPE: "div",
+        ID: "advanced_subtab",
+        CLASS: "subtab",
+        HTML: `<h3>Advanced</h3>`,
+        APPEND: "subtabs"
+      }
+    },
+    HELP: {
+      TYPE: "div",
+      ID: "help",
+      CLASS: "container",
+      APPEND: "home",
+      HC_00: {
+        TYPE: "div",
+        ID: "hc_00",
+        CLASS: "help",
+        HTML: `
+                        <h3>What is Syrch?</h3>
+                        <p>A tool to help you explore the internet without a specific destination in mind.</p>
+                    `,
+        APPEND: "help"
+      },
+      HC_01: {
+        TYPE: "div",
+        ID: "hc_01",
+        CLASS: "help",
+        HTML: `
+                        <h3>What is Sypher?</h3>
+                        <p>Syrch is a part of the Sypher ecosystem, fueled by the SYPHER token.</p>
+                        <p>Sypher grants access to <span class="SyrchPro">SyrchPro</span>, and helps fund development through trading fees.</p>
+                    `,
+        APPEND: "help"
+      },
+      HC_02: {
+        TYPE: "div",
+        ID: "hc_02",
+        CLASS: "help",
+        HTML: `
+                        <h3>What is <span class="SyrchPro">SyrchPro</span>?</h3>
+                        <p><span class="SyrchPro">SyrchPro</span> extends the features and customization of Syrch. Connect a wallet with <strong>1000</strong> SYPHER tokens to get access.</p>
+                        <p>Premium features can be enabled when desired; without paying a direct flat rate or subscription fee.</p>
+                    `,
+        APPEND: "help"
+      },
+      HC_03: {
+        TYPE: "div",
+        ID: "hc_03",
+        CLASS: "help",
+        HTML: `
+                        <h3>Where Should I Start?</h3>
+                        <p>For further help, keep reading below. Otherwise, begin customizing your filters and search preferences - finally, press the search button to begin your journey.</p>
+                    `,
+        APPEND: "help"
+      },
+      GH_00: {
+        TYPE: "div",
+        ID: "gh_00",
+        CLASS: "help",
+        HTML: `
+                        <h3>General Help</h3>
+                        <p><strong>Filters: </strong>Customize specific filters for the search by category.</p>
+                        <p><span class="SyrchPro">SyrchPro</span> also allows you to insert a custom word as a prefix, suffix or randomly.</p>
+                        <br></br>
+                    `,
+        APPEND: "help"
+      },
+      GH_01: {
+        TYPE: "div",
+        ID: "gh_01",
+        CLASS: "help",
+        HTML: `
+                        <p><strong>Search Settings: </strong> Customize search preferences and URL generation properties.</p>
+                        <p><em>Stop on First </em> stops the search when the first valid result is found.</p>
+                        <p><em>Open on Find </em> opens valid results in a new tab. Highly recommended enabling "Stop on First" if this is enabled.</p>
+                        <p><em>Domains </em> allows toggling of domains for the search. All are enabled by default.</p>
+                        <br></br>
+                    `,
+        APPEND: "help"
+      },
+      GH_02: {
+        TYPE: "div",
+        ID: "gh_02",
+        CLASS: "help",
+        HTML: `
+                        <p><strong>URL Generation: </strong> Choose preferences for the way URLs are generated and constructed.</p>
+                        <p><em>Character Set </em> determines which characters are used when generating URLs.</p>
+                        <p><em>Cluster Chance </em> determines how often clusters like "th", "he", and "in" are used in the generated URLs.</p>
+                        <p><em>Mode </em> determines how URLs are generated. Either randomly, using phonetic patterns or syllables.</p>
+                    `,
+        APPEND: "help"
+      },
+      AH_00: {
+        TYPE: "div",
+        ID: "ah_00",
+        CLASS: "help",
+        HTML: `
+                        <h3>Advanced Settings</h3>
+                        <p><strong>Generation Length </strong> sets the minimum and maximum length for generated URLs. The maximum amount that the browser allows is 63 characters.</p>
+                    `,
+        APPEND: "help"
+      },
+      AH_01: {
+        TYPE: "div",
+        ID: "ah_01",
+        CLASS: "help",
+        HTML: `
+                        <h3><span class="SyrchPro">SyrchPro</span> Advanced Settings</h3>
+                        <p><strong>Search Limits</strong> Setup advanced search parameters.</p>
+                        <p><em>Search Amount </em> allows you to change the total amount of searches performed.</p>
+                        <p><em>Batch Size </em> sets how many batches there will be during the search process. If 'Search Amount' equals 100 and 'Batch Size' is 10, there will be 10 batches of 10 searches each.</p>
+                        <p><em>Batch Interval </em> is the time between each batch. Each batch will wait this long after the last batch starts, before starting to process.</p>
+                        <p><em>Concurrent Requests </em> sets the maximum amount of URLs that are processed at the same time.</p>
+                    `,
+        APPEND: "help"
+      }
+    },
+    MENU: {
+      TYPE: "div",
+      ID: "menu",
+      CLASS: "container",
+      HTML: `<h3>tehe</h3>`,
+      // Creates light blur effect
+      APPEND: "home"
+    },
+    RESULTS: {
+      TYPE: "div",
+      ID: "results",
+      CLASS: "container",
+      APPEND: "home"
+    },
+    RESULT: {
+      TYPE: "div",
+      ID: "result",
+      CLASS: "result",
+      APPEND: "results"
+    },
+    //
+    //
+    // --> Filters
+    FILTERS_CONTAINER: {
+      TYPE: "div",
+      ID: "filters_container",
+      CLASS: "container",
+      APPEND: "menu"
+    },
+    FILTERS: {
+      TYPE: "div",
+      ID: "filters",
+      CLASS: "container",
+      APPEND: "filters_container"
+    },
+    FILTER_CATEGORIES: {
+      TYPE: "div",
+      ID: " ",
+      // Apply dynamically
+      CLASS: "category",
+      APPEND: "filters"
+    },
+    FILTER_CONTAINTERS: {
+      TYPE: "div",
+      ID: " ",
+      // Apply dynamically
+      CLASS: "filters",
+      APPEND: " "
+      // Apply dynamically
+    },
+    //
+    //
+    // --> Custom Input
+    CUSTOM_INPUT_CONTAINER: {
+      PREMIUM: true,
+      TYPE: "div",
+      ID: "custom_input_container",
+      CLASS: "category",
+      HTML: `<h3>Custom Word</h3>`,
+      APPEND: "filters_container"
+    },
+    INPUT_CONTAINER: {
+      TYPE: "div",
+      ID: "input_container",
+      CLASS: "container",
+      APPEND: "custom_input_container"
+    },
+    INPUT: {
+      TYPE: "input",
+      ID: "custom_input",
+      CLASS: "input",
+      LIMITS: "string",
+      MIN: 0,
+      MAX: SEARCH_PREFS.CUSTOM.LENGTH.MAX,
+      PLACEHOLDER: "Custom Word Entry...",
+      TOOLTIP: "Enter a custom word to include in the search.",
+      AUDIO: { HOVER: true, CLICK: true },
+      APPEND: "input_container"
+    },
+    INSERT_CONTAINER: {
+      TYPE: "div",
+      ID: "insert_container",
+      CLASS: "container",
+      APPEND: "input_container",
+      INSERT_PREFIX: {
+        TYPE: "div",
+        ID: "insert_prefix",
+        CLASS: "toggler",
+        TOOLTIP: "Insert word at the beginning.",
+        TEXT: "Prefix",
+        AUDIO: { HOVER: true, CLICK: true },
+        APPEND: "insert_container"
+      },
+      INSERT_SUFFIX: {
+        TYPE: "div",
+        ID: "insert_suffix",
+        CLASS: "toggler",
+        TOOLTIP: "Insert word at the end.",
+        TEXT: "Suffix",
+        AUDIO: { HOVER: true, CLICK: true },
+        APPEND: "insert_container"
+      },
+      INSERT_RANDOM: {
+        TYPE: "div",
+        ID: "insert_random",
+        CLASS: "toggler",
+        TOOLTIP: "Insert word randomly.",
+        TEXT: "Random",
+        AUDIO: { HOVER: true, CLICK: true },
+        APPEND: "insert_container"
+      }
+    },
+    //
+    //
+    // --> Search Settings
+    SEARCH_SETTINGS_CONTAINER: {
+      TYPE: "div",
+      ID: "search_settings_container",
+      CLASS: "container",
+      APPEND: "menu"
+    },
+    SEARCH_SETTINGS_TOGGLES: {
+      TYPE: "div",
+      ID: "search_settings_toggles",
+      CLASS: "container",
+      APPEND: "search_settings_container",
+      STOP_ON_FIRST_CONTAINER: {
+        TYPE: "div",
+        ID: "stop_on_first_container",
+        CLASS: "category",
+        TEXT: "Stop on First",
+        TOOLTIP: "Stop searching after the first valid result is found.",
+        AUDIO: { HOVER: true, CLICK: true },
+        APPEND: "search_settings_toggles"
+      },
+      STOP_ON_FIRST_TOGGLER: {
+        TYPE: "div",
+        ID: "stop_on_first_toggler",
+        CLASS: "toggler",
+        APPEND: "stop_on_first_container"
+      },
+      OPEN_ON_FIND_CONTAINER: {
+        TYPE: "div",
+        ID: "open_on_find_container",
+        CLASS: "category",
+        TEXT: "Open on Find",
+        TOOLTIP: "Opens results in a new tab. Recommend enabling 'Stop on First' when enabled.",
+        AUDIO: { HOVER: true, CLICK: true },
+        APPEND: "search_settings_toggles"
+      },
+      OPEN_ON_FIND_TOGGLER: {
+        TYPE: "div",
+        ID: "open_on_find_toggler",
+        CLASS: "toggler",
+        APPEND: "open_on_find_container"
+      }
+    },
+    DOMAIN_SETTINGS_CONTAINER: {
+      TYPE: "div",
+      ID: "domain_settings_container",
+      CLASS: "container",
+      APPEND: "search_settings_container",
+      DOMAIN_SETTINGS: {
+        TYPE: "div",
+        ID: "domain_settings",
+        HTML: "<h3>Domains</h3>",
+        CLASS: "category",
+        TOOLTIP: "Select which domains to include in the search.",
+        APPEND: "domain_settings_container",
+        DOMAINS_CONTAINER: {
+          TYPE: "div",
+          ID: "domains_container",
+          CLASS: "filters",
+          APPEND: "domain_settings"
+        }
+      }
+    },
+    DOMAINS: {
+      TYPE: "div",
+      ID: " ",
+      // Apply dynamically
+      CLASS: "toggler",
+      APPEND: "domains_container"
+    },
+    GENERATION_SETTINGS_CONTAINER: {
+      TYPE: "div",
+      ID: "generation_settings_container",
+      CLASS: "container",
+      APPEND: "search_settings_container",
+      GENERATION_SETTINGS: {
+        TYPE: "div",
+        ID: "generation_settings",
+        HTML: "<h3>URL Generation</h3>",
+        CLASS: "category",
+        APPEND: "generation_settings_container",
+        GENERATION_CONTAINER: {
+          TYPE: "div",
+          ID: "generation_container",
+          CLASS: "filters",
+          APPEND: "generation_settings"
+        }
+      }
+    },
+    CHARACTER_SET_SETTINGS_CONTAINER: {
+      TYPE: "div",
+      ID: "character_set_settings_container",
+      CLASS: "container",
+      TOOLTIP: "Determines which characters to use when generating URLs.",
+      APPEND: "generation_container",
+      CHARACTER_SET_SETTINGS: {
+        TYPE: "div",
+        ID: "character_set_settings",
+        HTML: `<h2>Character Set</h2>`,
+        CLASS: "category",
+        APPEND: "character_set_settings_container",
+        CHARACTER_SET_CONTAINER: {
+          TYPE: "div",
+          ID: "character_set_container",
+          CLASS: "filters",
+          APPEND: "character_set_settings"
+        }
+      }
+    },
+    CHARACTER_SET: {
+      TYPE: "div",
+      ID: " ",
+      // Apply dynamically
+      CLASS: "toggler",
+      APPEND: "character_set_container"
+    },
+    CLUSTER_CHANCE_SETTINGS_CONTAINER: {
+      TYPE: "div",
+      ID: "cluster_chance_settings_container",
+      CLASS: "container",
+      TOOLTIP: "How often clusters like 'th', 'st' or 'ch' are used in URL generation.",
+      APPEND: "generation_container",
+      CLUSTER_CHANCE_SETTINGS: {
+        TYPE: "div",
+        ID: "cluster_chance_settings",
+        HTML: `<h2>Cluster Chance</h2>`,
+        CLASS: "category",
+        APPEND: "cluster_chance_settings_container",
+        CLUSTER_CHANCE_CONTAINER: {
+          TYPE: "div",
+          ID: "cluster_chance_container",
+          CLASS: "filters",
+          APPEND: "cluster_chance_settings",
+          AUDIO: { HOVER: true }
+        }
+      }
+    },
+    RANDOM_MODE_SETTINGS_CONTAINER: {
+      TYPE: "div",
+      ID: "random_mode_settings_container",
+      CLASS: "container",
+      TOOLTIP: "Determines how URLs are generated. Either randomly, using phonetic patterns or syllables.",
+      APPEND: "generation_container",
+      RANDOM_MODE_SETTINGS: {
+        TYPE: "div",
+        ID: "random_mode_settings",
+        HTML: `<h2>Mode</h2>`,
+        CLASS: "category",
+        APPEND: "random_mode_settings_container",
+        RANDOM_MODE_CONTAINER: {
+          TYPE: "div",
+          ID: "random_mode_container",
+          CLASS: "filters",
+          APPEND: "random_mode_settings"
+        }
+      }
+    },
+    RANDOM_MODE: {
+      TYPE: "div",
+      ID: " ",
+      // Apply dynamically
+      CLASS: "toggler",
+      APPEND: "random_mode_container"
+    },
+    //
+    //
+    // --> Advanced Settings
+    ADVANCED_CONTAINER: {
+      TYPE: "div",
+      ID: "advanced_container",
+      CLASS: "container",
+      APPEND: "menu",
+      SEARCH_LENGTHS_CONTAINER: {
+        TYPE: "div",
+        ID: "search_lengths_container",
+        CLASS: "container",
+        APPEND: "advanced_container",
+        SEARCH_LENGTHS: {
+          TYPE: "div",
+          ID: "search_lengths",
+          CLASS: "category",
+          HTML: `<h3>Generation Length</h3>`,
+          TOOLTIP: "Minimum and maximum length for generated URLs.",
+          AUDIO: { HOVER: true },
+          APPEND: "search_lengths_container",
+          SEARCH_LENGTHS_INPUT_CONTAINER: {
+            TYPE: "div",
+            ID: "search_lengths_input_container",
+            CLASS: "container",
+            APPEND: "search_lengths",
+            MIN_LENGTH_INPUT: {
+              TYPE: "input",
+              ID: "min_length_input",
+              CLASS: "input",
+              LIMITS: "number",
+              MIN: 1,
+              MAX: SEARCH_PREFS.CUSTOM.LENGTH.MAX,
+              VALUE: SEARCH_PREFS.CUSTOM.LENGTH.MIN,
+              PLACEHOLDER: String(SEARCH_PREFS.CUSTOM.LENGTH.MIN),
+              TOOLTIP: "Minimum length for generated URLs.",
+              AUDIO: { CLICK: true },
+              APPEND: "search_lengths_input_container"
+            },
+            MAX_LENGTH_INPUT: {
+              TYPE: "input",
+              ID: "max_length_input",
+              CLASS: "input",
+              LIMITS: "number",
+              MIN: SEARCH_PREFS.CUSTOM.LENGTH.MIN,
+              MAX: 63,
+              VALUE: SEARCH_PREFS.CUSTOM.LENGTH.MAX,
+              PLACEHOLDER: String(SEARCH_PREFS.CUSTOM.LENGTH.MAX),
+              TOOLTIP: "Maximum length for generated URLs.",
+              AUDIO: { CLICK: true },
+              APPEND: "search_lengths_input_container"
+            }
+          }
+        }
+      },
+      SEARCH_LIMITS_CONTAINER: {
+        TYPE: "div",
+        ID: "search_limits_container",
+        CLASS: "container",
+        APPEND: "advanced_container",
+        SEARCH_AMOUNT_CONTAINER: {
+          PREMIUM: true,
+          TYPE: "div",
+          ID: "search_amount_container",
+          CLASS: "category",
+          HTML: `<h3>Search Amount</h3>`,
+          TOOLTIP: "How many URLs to generate per search.",
+          AUDIO: { HOVER: true },
+          APPEND: "search_limits_container",
+          SEARCH_AMOUNT_INPUT_CONTAINER: {
+            TYPE: "div",
+            ID: "search_amount_input_container",
+            CLASS: "container",
+            APPEND: "search_amount_container",
+            SEARCH_AMOUNT_INPUT: {
+              TYPE: "input",
+              ID: "search_amount_input",
+              CLASS: "input",
+              LIMITS: "number",
+              MIN: 1,
+              MAX: 1e5,
+              VALUE: SEARCH_PREFS.LIMITS.RETRIES,
+              PLACEHOLDER: String(SEARCH_PREFS.LIMITS.RETRIES),
+              AUDIO: { CLICK: true },
+              APPEND: "search_amount_input_container"
+            }
+          }
+        },
+        BATCH_SIZE_CONTAINER: {
+          PREMIUM: true,
+          TYPE: "div",
+          ID: "batch_size_container",
+          CLASS: "category",
+          HTML: `<h3>Batch Size</h3>`,
+          TOOLTIP: "How many URLs to check per batch.",
+          AUDIO: { HOVER: true },
+          APPEND: "search_limits_container",
+          BATCH_SIZE_INPUT_CONTAINER: {
+            TYPE: "div",
+            ID: "batch_size_input_container",
+            CLASS: "container",
+            APPEND: "batch_size_container",
+            BATCH_SIZE_INPUT: {
+              TYPE: "input",
+              ID: "batch_size_input",
+              CLASS: "input",
+              LIMITS: "number",
+              MIN: 1,
+              MAX: SEARCH_PREFS.LIMITS.RETRIES,
+              VALUE: SEARCH_PREFS.LIMITS.BATCH,
+              PLACEHOLDER: String(SEARCH_PREFS.LIMITS.BATCH),
+              AUDIO: { CLICK: true },
+              APPEND: "batch_size_input_container"
+            }
+          }
+        },
+        BATCH_INTERVAL_CONTAINER: {
+          PREMIUM: true,
+          TYPE: "div",
+          ID: "batch_interval_container",
+          CLASS: "category",
+          HTML: `<h3>Batch Interval</h3>`,
+          TOOLTIP: "Time in milliseconds between batches.",
+          AUDIO: { HOVER: true },
+          APPEND: "search_limits_container",
+          BATCH_INTERVAL_INPUT_CONTAINER: {
+            TYPE: "div",
+            ID: "batch_interval_input_container",
+            CLASS: "container",
+            APPEND: "batch_interval_container",
+            BATCH_INTERVAL_INPUT: {
+              TYPE: "input",
+              ID: "batch_interval_input",
+              CLASS: "input",
+              LIMITS: "number",
+              MIN: 100,
+              // 1 second
+              MAX: 6e4,
+              // 1 minute
+              VALUE: SEARCH_PREFS.LIMITS.BATCH_INTERVAL,
+              PLACEHOLDER: String(SEARCH_PREFS.LIMITS.BATCH_INTERVAL),
+              AUDIO: { CLICK: true },
+              APPEND: "batch_interval_input_container"
+            }
+          }
+        },
+        CONCURRENT_REQUESTS_CONTAINER: {
+          PREMIUM: true,
+          TYPE: "div",
+          ID: "concurrent_requests_container",
+          CLASS: "category",
+          HTML: `<h3>Concurrent Requests</h3>`,
+          TOOLTIP: "How many requests can be processed at the same time. Recommend 100 or less.",
+          AUDIO: { HOVER: true },
+          APPEND: "search_limits_container",
+          CONCURRENT_REQUESTS_INPUT_CONTAINER: {
+            TYPE: "div",
+            ID: "concurrent_requests_input_container",
+            CLASS: "container",
+            APPEND: "concurrent_requests_container",
+            CONCURRENT_REQUESTS_INPUT: {
+              TYPE: "input",
+              ID: "concurrent_requests_input",
+              CLASS: "input",
+              LIMITS: "number",
+              MIN: 1,
+              MAX: 1e3,
+              VALUE: SEARCH_PREFS.LIMITS.MAX_CONCURRENT_REQUESTS,
+              PLACEHOLDER: String(SEARCH_PREFS.LIMITS.MAX_CONCURRENT_REQUESTS),
+              AUDIO: { CLICK: true },
+              APPEND: "concurrent_requests_input_container"
+            }
+          }
+        }
+      },
+      TIMEOUT_LIMITS_CONTAINER: {
+        TYPE: "div",
+        ID: "timeout_limits_container",
+        CLASS: "container",
+        APPEND: "advanced_container",
+        TIMEOUT_LIMIT: {
+          PREMIUM: true,
+          TYPE: "div",
+          ID: "timeout_limit",
+          CLASS: "category",
+          HTML: `<h3>Timeout Limit</h3>`,
+          TOOLTIP: "How long in milliseconds to wait for each URL to respond.",
+          AUDIO: { HOVER: true },
+          APPEND: "timeout_limits_container",
+          TIMEOUT_LIMIT_INPUT_CONTAINER: {
+            TYPE: "div",
+            ID: "timeout_limit_input_container",
+            CLASS: "container",
+            APPEND: "timeout_limit",
+            TIMEOUT_LIMIT_INPUT: {
+              TYPE: "input",
+              ID: "timeout_limit_input",
+              CLASS: "input",
+              LIMITS: "number",
+              MIN: 100,
+              // 0.1 second
+              MAX: 3e4,
+              // 30 seconds
+              VALUE: SEARCH_PREFS.LIMITS.TIMEOUT,
+              PLACEHOLDER: String(SEARCH_PREFS.LIMITS.TIMEOUT),
+              AUDIO: { CLICK: true },
+              APPEND: "timeout_limit_input_container"
+            }
+          }
+        }
+      },
+      FALLBACK_LIMITS_CONTAINER: {
+        TYPE: "div",
+        ID: "fallback_limits_container",
+        CLASS: "container",
+        APPEND: "advanced_container",
+        FALLBACK_TIMEOUT_LIMIT: {
+          PREMIUM: true,
+          TYPE: "div",
+          ID: "fallback_timeout_limit",
+          CLASS: "category",
+          HTML: `<h3>Fallback Timeout</h3>`,
+          TOOLTIP: "How long in milliseconds to wait for a fallback request.",
+          AUDIO: { HOVER: true },
+          APPEND: "fallback_limits_container",
+          FALLBACK_TIMEOUT_LIMIT_INPUT_CONTAINER: {
+            TYPE: "div",
+            ID: "fallback_timeout_limit_input_container",
+            CLASS: "container",
+            APPEND: "fallback_timeout_limit",
+            FALLBACK_TIMEOUT_LIMIT_INPUT: {
+              TYPE: "input",
+              ID: "fallback_timeout_limit_input",
+              CLASS: "input",
+              LIMITS: "number",
+              MIN: 1e3,
+              // 1 second
+              MAX: 3e4,
+              // 30 seconds
+              VALUE: SEARCH_PREFS.LIMITS.FALLBACK.TIMEOUT,
+              PLACEHOLDER: String(SEARCH_PREFS.LIMITS.FALLBACK.TIMEOUT),
+              AUDIO: { CLICK: true },
+              APPEND: "fallback_timeout_limit_input_container"
+            }
+          }
+        },
+        FALLBACK_RETRIES_LIMIT: {
+          PREMIUM: true,
+          TYPE: "div",
+          ID: "fallback_retries_limit",
+          CLASS: "category",
+          HTML: `<h3>Fallback Retries</h3>`,
+          TOOLTIP: "How many times to retry a fallback request.",
+          AUDIO: { HOVER: true },
+          APPEND: "fallback_limits_container",
+          FALLBACK_RETRIES_LIMIT_INPUT_CONTAINER: {
+            TYPE: "div",
+            ID: "fallback_retries_limit_input_container",
+            CLASS: "container",
+            APPEND: "fallback_retries_limit",
+            FALLBACK_RETRIES_LIMIT_INPUT: {
+              TYPE: "input",
+              ID: "fallback_retries_limit_input",
+              CLASS: "input",
+              LIMITS: "number",
+              MIN: 1,
+              MAX: 10,
+              VALUE: SEARCH_PREFS.LIMITS.FALLBACK.RETRIES,
+              PLACEHOLDER: String(SEARCH_PREFS.LIMITS.FALLBACK.RETRIES),
+              AUDIO: { CLICK: true },
+              APPEND: "fallback_retries_limit_input_container"
+            }
+          }
+        }
+      }
+    },
+    //
+    //
+    // --> Search
+    SEARCH: {
+      TYPE: "div",
+      ID: "search",
+      CLASS: "container",
+      APPEND: "home"
+    }
+  },
+  BUTTONS: {
+    SEARCH: {
+      TYPE: "button",
+      ID: "search_button",
+      CLASS: "button",
+      TEXT: "Search",
+      APPEND: "search",
+      AUDIO: {
+        HOVER: true,
+        CLICK: true
+      }
+    }
+  },
+  SLIDERS: {
+    PROGRESS_SLIDER: {
+      WRAPPER: {
+        TYPE: "div",
+        ID: "progress_wrapper",
+        CLASS: "wrapper",
+        APPEND: "search"
+      },
+      FILL: {
+        TYPE: "div",
+        ID: "progress_fill",
+        CLASS: "fill",
+        APPEND: "progress_wrapper"
+      }
+    },
+    CLUSTER_CHANCE_SLIDER: {
+      WRAPPER: {
+        TYPE: "div",
+        ID: "cluster_chance_wrapper",
+        CLASS: "wrapper",
+        APPEND: "cluster_chance_container"
+      },
+      FILL: {
+        TYPE: "div",
+        ID: "cluster_chance_fill",
+        CLASS: "fill",
+        APPEND: "cluster_chance_wrapper"
+      }
+    }
+  },
+  TOGGLE: {
+    FILTERS_TOGGLE: {
+      TOGGLER: {
+        TYPE: "div",
+        ID: "toggle_wrapper",
+        CLASS: "toggler",
+        TEXT: " ",
+        // Apply dynamically
+        APPEND: "filters"
+      }
+    }
+  }
+};
 
 // src/dict/human/authors.json
 var authors_default = {
@@ -6552,23 +7153,9 @@ var ui = {};
 function createUI() {
   initHeader();
   initCore();
-  initFilters();
+  initSubtabs();
   initSearch();
-  ProgressEvents.on((percent) => {
-    ui.progressFill.style.width = `${Math.floor(percent * 100)}%`;
-  });
-  ui.searchButton.addEventListener("click", () => {
-    if (state.isSearching) {
-      state.isSearching = false;
-      setText("searchButton", "Search");
-      return;
-    }
-    ui.progressFill.style.width = "0%";
-    search();
-  });
-  if (DEBUG.ENABLED) {
-    console.log("UI created:", ui);
-  }
+  InterfaceInitEvents.emit();
   return ui;
 }
 function createElement(config) {
@@ -6579,28 +7166,102 @@ function createElement(config) {
   if (config.html) el.innerHTML = config.html;
   if (config.placeholder) el.placeholder = config.placeholder;
   if (config.tooltip) tooltip(el, config.tooltip);
+  if (config.premium) initPremium(el);
+  if (config.limits) el.type = config.limits;
+  if (config.min !== void 0) el.min = String(config.min);
+  if (config.max !== void 0) el.max = String(config.max);
+  if (config.value !== void 0) el.value = String(config.value);
   const target = config.append === "body" ? document.body : document.getElementById(config.append);
   target?.appendChild(el);
+  if (config.limits && (config.min !== void 0 || config.max !== void 0)) {
+    el.addEventListener("blur", () => {
+      const input = el;
+      let value = input.value.trim();
+      if (value === "") return;
+      value = value.replace(/[^a-zA-Z0-9]/g, "");
+      if (config.limits === "number") {
+        let num = Number(value);
+        if (!Number.isInteger(num)) {
+          num = Math.round(num);
+        }
+        if (config.min !== void 0 && num < config.min) {
+          num = config.min;
+        }
+        if (config.max !== void 0 && num > config.max) {
+          num = config.max;
+        }
+        input.value = String(num);
+      } else if (config.limits === "string") {
+        if (config.max !== void 0 && value.length > config.max) {
+          value = value.slice(0, config.max);
+        }
+        if (config.min !== void 0 && value.length < config.min) {
+          value = "";
+        }
+        input.value = value;
+      }
+    });
+  }
+  if (config.audio?.hover) {
+    el.addEventListener("mouseenter", () => {
+      playSound("hover");
+    });
+  }
+  if (config.audio?.click) {
+    el.addEventListener("click", () => {
+      playSound("click");
+    });
+  }
   return el;
+}
+function initPremium(element) {
+  element.classList.forEach((className) => {
+    if (className.startsWith("premium_")) {
+      element.classList.remove(className);
+    }
+  });
+  element.classList.add(`premium_${state.isPremium}`);
+  element.dataset.premium = "required";
+}
+function updatePremium() {
+  document.querySelectorAll('[data-premium="required"]').forEach((element) => {
+    initPremium(element);
+  });
 }
 function initHeader() {
   ui.header = createElement(sanitize(INTERFACE.HEADER));
   ui.logo = createElement(sanitize(INTERFACE.HEADER.CONTAINERS.LOGO));
-  ui.login = createElement(sanitize(INTERFACE.HEADER.CONTAINERS.LOGIN));
 }
 function initCore() {
   ui.main = createElement(sanitize(INTERFACE.MAIN));
   ui.home = createElement(sanitize(INTERFACE.CONTAINERS.HOME));
   ui.tabs = createElement(sanitize(INTERFACE.CONTAINERS.TABS));
+  ui.helpTab = createElement(sanitize(INTERFACE.CONTAINERS.TABS.HELP_TAB));
   ui.optionsTab = createElement(sanitize(INTERFACE.CONTAINERS.TABS.OPTIONS_TAB));
   ui.resultsTab = createElement(sanitize(INTERFACE.CONTAINERS.TABS.RESULTS_TAB));
+  ui.helpTab.addEventListener("click", () => toggleTab(ui.helpTab));
   ui.optionsTab.addEventListener("click", () => toggleTab(ui.optionsTab));
   ui.resultsTab.addEventListener("click", () => toggleTab(ui.resultsTab));
+  ui.help = createElement(sanitize(INTERFACE.CONTAINERS.HELP));
   ui.menu = createElement(sanitize(INTERFACE.CONTAINERS.MENU));
   ui.results = createElement(sanitize(INTERFACE.CONTAINERS.RESULTS));
+  initHelpContent();
+  ui.subtabs = createElement(sanitize(INTERFACE.CONTAINERS.SUBTABS));
+  ui.filtersSubtab = createElement(sanitize(INTERFACE.CONTAINERS.SUBTABS.FILTERS_SUBTAB));
+  ui.searchSettingsSubtab = createElement(sanitize(INTERFACE.CONTAINERS.SUBTABS.SEARCH_SETTINGS_SUBTAB));
+  ui.advancedSubtab = createElement(sanitize(INTERFACE.CONTAINERS.SUBTABS.ADVANCED_SUBTAB));
+  ui.filtersSubtab.addEventListener("click", () => toggleSubtab(ui.filtersSubtab));
+  ui.searchSettingsSubtab.addEventListener("click", () => toggleSubtab(ui.searchSettingsSubtab));
+  ui.advancedSubtab.addEventListener("click", () => toggleSubtab(ui.advancedSubtab));
   toggleTab(ui.optionsTab);
 }
-function initFilters() {
+function initSubtabs() {
+  initFiltersSubtab();
+  initSearchSettingsSubtab();
+  initAdvancedSubtab();
+  toggleSubtab(ui.filtersSubtab);
+}
+function initFiltersSubtab() {
   ui.filtersContainer = createElement(sanitize(INTERFACE.CONTAINERS.FILTERS_CONTAINER));
   ui.filters = createElement(sanitize(INTERFACE.CONTAINERS.FILTERS));
   for (const folderName in dict) {
@@ -6611,13 +7272,14 @@ function initFilters() {
       type: "div",
       id: categoryID,
       class: "category",
-      append: "filters"
+      append: "filters",
+      audio: { click: true }
     });
     ui[categoryID] = categoryContainer;
     categoryContainer.addEventListener("click", (event) => {
       if (event.target.classList.contains("toggler")) return;
       const togglers = categoryContainer.querySelectorAll(".toggler");
-      const allActive = Array.from(togglers).every((t2) => t2.classList.contains("active"));
+      const allActive = Array.from(togglers).every((t) => t.classList.contains("active"));
       togglers.forEach((toggler) => {
         toggler.classList.toggle("active", !allActive);
         if (DEBUG.ENABLED) {
@@ -6646,10 +7308,14 @@ function initFilters() {
         text: entryName,
         append: containerID
       });
+      toggler.addEventListener("mouseenter", () => {
+        playSound("hover");
+      });
       toggler.setAttribute("data-group", folderName);
       toggler.setAttribute("data-key", entryName);
       toggler.addEventListener("click", () => {
         toggler.classList.toggle("active");
+        playSound("click");
         if (DEBUG.ENABLED) {
           console.log(`Toggled ${entryName} in ${folderName}`);
         }
@@ -6657,6 +7323,357 @@ function initFilters() {
       ui[toggleID] = toggler;
     }
   }
+}
+function initHelpContent() {
+  ui.hc00 = createElement(sanitize(INTERFACE.CONTAINERS.HELP.HC_00));
+  ui.hc01 = createElement(sanitize(INTERFACE.CONTAINERS.HELP.HC_01));
+  ui.hc02 = createElement(sanitize(INTERFACE.CONTAINERS.HELP.HC_02));
+  ui.hc03 = createElement(sanitize(INTERFACE.CONTAINERS.HELP.HC_03));
+  ui.gh00 = createElement(sanitize(INTERFACE.CONTAINERS.HELP.GH_00));
+  ui.gh01 = createElement(sanitize(INTERFACE.CONTAINERS.HELP.GH_01));
+  ui.gh02 = createElement(sanitize(INTERFACE.CONTAINERS.HELP.GH_02));
+  ui.ah00 = createElement(sanitize(INTERFACE.CONTAINERS.HELP.AH_00));
+  ui.ah01 = createElement(sanitize(INTERFACE.CONTAINERS.HELP.AH_01));
+}
+function initSearchSettingsSubtab() {
+  ui.searchSettingsContainer = createElement(sanitize(INTERFACE.CONTAINERS.SEARCH_SETTINGS_CONTAINER));
+  ui.searchSettingsToggles = createElement(sanitize(INTERFACE.CONTAINERS.SEARCH_SETTINGS_TOGGLES));
+  ui.stopOnFirstContainer = createElement(sanitize(INTERFACE.CONTAINERS.SEARCH_SETTINGS_TOGGLES.STOP_ON_FIRST_CONTAINER));
+  ui.stopOnFirstToggler = createElement(sanitize(INTERFACE.CONTAINERS.SEARCH_SETTINGS_TOGGLES.STOP_ON_FIRST_TOGGLER));
+  ui.stopOnFirstContainer.addEventListener("click", () => {
+    ui.stopOnFirstToggler.classList.toggle("active");
+    SEARCH_PREFS.CUSTOM.STOP_ON_FIRST = ui.stopOnFirstToggler.classList.contains("active");
+    if (DEBUG.ENABLED) {
+      console.log(`Stop on first set to ${SEARCH_PREFS.CUSTOM.STOP_ON_FIRST}`);
+    }
+  });
+  if (SEARCH_PREFS.CUSTOM.STOP_ON_FIRST) {
+    ui.stopOnFirstToggler.classList.add("active");
+  }
+  ui.openOnFindContainer = createElement(sanitize(INTERFACE.CONTAINERS.SEARCH_SETTINGS_TOGGLES.OPEN_ON_FIND_CONTAINER));
+  ui.openOnFindToggler = createElement(sanitize(INTERFACE.CONTAINERS.SEARCH_SETTINGS_TOGGLES.OPEN_ON_FIND_TOGGLER));
+  ui.openOnFindContainer.addEventListener("click", () => {
+    ui.openOnFindToggler.classList.toggle("active");
+    SEARCH_PREFS.CUSTOM.OPEN_ON_FIND = ui.openOnFindToggler.classList.contains("active");
+    if (DEBUG.ENABLED) {
+      console.log(`Open on find set to ${SEARCH_PREFS.CUSTOM.OPEN_ON_FIND}`);
+    }
+  });
+  if (SEARCH_PREFS.CUSTOM.OPEN_ON_FIND) {
+    ui.openOnFindToggler.classList.add("active");
+  }
+  initDomainSettings();
+  ui.generationSettingsContainer = createElement(sanitize(INTERFACE.CONTAINERS.GENERATION_SETTINGS_CONTAINER));
+  ui.generationSettings = createElement(sanitize(INTERFACE.CONTAINERS.GENERATION_SETTINGS_CONTAINER.GENERATION_SETTINGS));
+  ui.generationContainer = createElement(sanitize(INTERFACE.CONTAINERS.GENERATION_SETTINGS_CONTAINER.GENERATION_SETTINGS.GENERATION_CONTAINER));
+  initCharacterSetSettings();
+  initClusterWeightSettings();
+  initRandomModeSettings();
+}
+function initDomainSettings() {
+  ui.domainsContainer = createElement(sanitize(INTERFACE.CONTAINERS.DOMAIN_SETTINGS_CONTAINER));
+  ui.domainSettings = createElement(sanitize(INTERFACE.CONTAINERS.DOMAIN_SETTINGS_CONTAINER.DOMAIN_SETTINGS));
+  ui.domainsContainerInner = createElement(sanitize(INTERFACE.CONTAINERS.DOMAIN_SETTINGS_CONTAINER.DOMAIN_SETTINGS.DOMAINS_CONTAINER));
+  const domainKeys = Object.keys(SEARCH_PREFS.DOMAINS);
+  for (const domain of domainKeys) {
+    const domainID = `toggle_domain_${domain.replace(/\./g, "")}`;
+    const toggler = createElement(sanitize({
+      ...INTERFACE.CONTAINERS.DOMAINS,
+      ID: domainID,
+      TEXT: domain
+    }));
+    toggler.addEventListener("mouseenter", () => {
+      playSound("hover");
+    });
+    toggler.setAttribute("data-domain", domain);
+    toggler.addEventListener("click", () => {
+      const isActive = toggler.classList.toggle("active");
+      SEARCH_PREFS.DOMAINS[domain] = isActive;
+      playSound("click");
+      if (DEBUG.ENABLED) {
+        console.log(`Toggled domain: ${domain} \u2192 ${isActive}`);
+      }
+    });
+    if (SEARCH_PREFS.DOMAINS[domain]) {
+      toggler.classList.add("active");
+    }
+    ui[domainID] = toggler;
+  }
+}
+function initCharacterSetSettings() {
+  ui.characterSetSettingsContainer = createElement(sanitize(INTERFACE.CONTAINERS.CHARACTER_SET_SETTINGS_CONTAINER));
+  ui.characterSetSettings = createElement(sanitize(INTERFACE.CONTAINERS.CHARACTER_SET_SETTINGS_CONTAINER.CHARACTER_SET_SETTINGS));
+  ui.characterSetContainer = createElement(sanitize(INTERFACE.CONTAINERS.CHARACTER_SET_SETTINGS_CONTAINER.CHARACTER_SET_SETTINGS.CHARACTER_SET_CONTAINER));
+  for (const key of Object.keys(CHARACTERS.CHARACTER_SET)) {
+    const toggleID = `toggle_character_set_${key}`;
+    const toggler = createElement(sanitize({
+      ...INTERFACE.CONTAINERS.CHARACTER_SET,
+      ID: toggleID,
+      TEXT: key
+    }));
+    toggler.addEventListener("mouseenter", () => {
+      playSound("hover");
+    });
+    toggler.setAttribute("data-character-set", key);
+    toggler.addEventListener("click", () => {
+      const all3 = ui.characterSetContainer.querySelectorAll(".toggler");
+      all3.forEach((el) => el.classList.remove("active"));
+      toggler.classList.add("active");
+      SEARCH_PREFS.CUSTOM.CHARACTERS = CHARACTERS.CHARACTER_SET[key];
+      if (key === "NUMERIC" || key === "ALPHANUMERIC") {
+        SEARCH_PREFS.CUSTOM.RANDOM = RANDOM_MODE.RANDOM;
+        const randomModeTogglers = ui.randomModeContainer?.querySelectorAll(".toggler");
+        randomModeTogglers?.forEach((el) => el.classList.remove("active"));
+        const rawToggle = ui.randomModeContainer?.querySelector('[data-random-mode="RAW"]');
+        rawToggle?.classList.add("active");
+        if (DEBUG.ENABLED) {
+          console.log(`Auto-switched to RAW mode for ${key} character set`);
+        }
+      }
+      playSound("click");
+      if (DEBUG.ENABLED) {
+        console.log(`Character set set to ${key}`);
+      }
+    });
+    if (SEARCH_PREFS.CUSTOM.CHARACTERS === CHARACTERS.CHARACTER_SET[key]) {
+      toggler.classList.add("active");
+    }
+    ui[toggleID] = toggler;
+  }
+}
+function initClusterWeightSettings() {
+  ui.clusterWeightSettingsContainer = createElement(sanitize(INTERFACE.CONTAINERS.CLUSTER_CHANCE_SETTINGS_CONTAINER));
+  ui.clusterWeightSettings = createElement(sanitize(INTERFACE.CONTAINERS.CLUSTER_CHANCE_SETTINGS_CONTAINER.CLUSTER_CHANCE_SETTINGS));
+  ui.clusterWeightContainer = createElement(sanitize(INTERFACE.CONTAINERS.CLUSTER_CHANCE_SETTINGS_CONTAINER.CLUSTER_CHANCE_SETTINGS.CLUSTER_CHANCE_CONTAINER));
+  ui.clusterWeightWrapper = createElement(sanitize(INTERFACE.SLIDERS.CLUSTER_CHANCE_SLIDER.WRAPPER));
+  ui.clusterWeightFill = createElement(sanitize(INTERFACE.SLIDERS.CLUSTER_CHANCE_SLIDER.FILL));
+  updateClusterWeightFill(SEARCH_PREFS.CUSTOM.CLUSTER_CHANCE);
+  let isDragging = false;
+  ui.clusterWeightContainer.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    updateFillFromMouse(e);
+  });
+  document.addEventListener("mousemove", (e) => {
+    if (isDragging) {
+      updateFillFromMouse(e);
+    }
+  });
+  document.addEventListener("mouseup", () => {
+    if (isDragging && DEBUG.ENABLED) {
+      console.log(`Cluster weight set to ${SEARCH_PREFS.CUSTOM.CLUSTER_CHANCE}`);
+    }
+    isDragging = false;
+  });
+  function updateFillFromMouse(e) {
+    const rect = ui.clusterWeightContainer.getBoundingClientRect();
+    const clampedX = Math.min(Math.max(e.clientX - rect.left, 0), rect.width);
+    const percent = clampedX / rect.width;
+    const clamped = Math.min(Math.max(percent, 0), 1);
+    SEARCH_PREFS.CUSTOM.CLUSTER_CHANCE = clamped;
+    updateClusterWeightFill(clamped);
+  }
+}
+function initRandomModeSettings() {
+  ui.randomModeSettingsContainer = createElement(sanitize(INTERFACE.CONTAINERS.RANDOM_MODE_SETTINGS_CONTAINER));
+  ui.randomModeSettings = createElement(sanitize(INTERFACE.CONTAINERS.RANDOM_MODE_SETTINGS_CONTAINER.RANDOM_MODE_SETTINGS));
+  ui.randomModeContainer = createElement(sanitize(INTERFACE.CONTAINERS.RANDOM_MODE_SETTINGS_CONTAINER.RANDOM_MODE_SETTINGS.RANDOM_MODE_CONTAINER));
+  for (const key of Object.keys(RANDOM_MODE)) {
+    const toggleID = `toggle_random_mode_${key}`;
+    const toggler = createElement(sanitize({
+      ...INTERFACE.CONTAINERS.RANDOM_MODE,
+      ID: toggleID,
+      TEXT: key
+    }));
+    toggler.addEventListener("mouseenter", () => {
+      playSound("hover");
+    });
+    toggler.setAttribute("data-random-mode", key);
+    toggler.addEventListener("click", () => {
+      const all3 = ui.randomModeContainer.querySelectorAll(".toggler");
+      all3.forEach((el) => el.classList.remove("active"));
+      toggler.classList.add("active");
+      SEARCH_PREFS.CUSTOM.RANDOM = RANDOM_MODE[key];
+      if (key === "PHONETIC" || key === "SYLLABLE") {
+        SEARCH_PREFS.CUSTOM.CHARACTERS = CHARACTERS.CHARACTER_SET.ALPHABETIC;
+        const characterSetTogglers = ui.characterSetContainer?.querySelectorAll(".toggler");
+        characterSetTogglers?.forEach((el) => el.classList.remove("active"));
+        const alphabeticToggle = ui.characterSetContainer?.querySelector('[data-character-set="ALPHABETIC"]');
+        alphabeticToggle?.classList.add("active");
+        if (DEBUG.ENABLED) {
+          console.log(`Auto-switched to ALPHABETIC character set for ${key} mode`);
+        }
+      }
+      playSound("click");
+      if (DEBUG.ENABLED) {
+        console.log(`Random mode set to ${key}`);
+      }
+    });
+    if (SEARCH_PREFS.CUSTOM.RANDOM === RANDOM_MODE[key]) {
+      toggler.classList.add("active");
+    }
+    ui[toggleID] = toggler;
+  }
+}
+function initAdvancedSubtab() {
+  ui.advancedContainer = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER));
+  ui.searchLengthsContainer = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.SEARCH_LENGTHS_CONTAINER));
+  ui.searchLimitsContainer = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.SEARCH_LIMITS_CONTAINER));
+  ui.timeoutLimitsContainer = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.TIMEOUT_LIMITS_CONTAINER));
+  ui.fallbackLimitsContainer = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.FALLBACK_LIMITS_CONTAINER));
+  initSearchLengths();
+  initSearchAmounts();
+  initBatchSize();
+  initBatchInterval();
+  initConcurrentRequests();
+  initTimeoutLimits();
+  initFallbackLimits();
+}
+function initSearchLengths() {
+  ui.searchLengths = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.SEARCH_LENGTHS_CONTAINER.SEARCH_LENGTHS));
+  ui.searchLengthsInputContainer = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.SEARCH_LENGTHS_CONTAINER.SEARCH_LENGTHS.SEARCH_LENGTHS_INPUT_CONTAINER));
+  ui.minLengthInput = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.SEARCH_LENGTHS_CONTAINER.SEARCH_LENGTHS.SEARCH_LENGTHS_INPUT_CONTAINER.MIN_LENGTH_INPUT));
+  ui.maxLengthInput = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.SEARCH_LENGTHS_CONTAINER.SEARCH_LENGTHS.SEARCH_LENGTHS_INPUT_CONTAINER.MAX_LENGTH_INPUT));
+  ui.minLengthInput.addEventListener("blur", () => {
+    const input = ui.minLengthInput;
+    const value = input.value.trim();
+    if (value === "") return;
+    const num = Number(value);
+    if (!isNaN(num)) {
+      SEARCH_PREFS.CUSTOM.LENGTH.MIN = num;
+      if (DEBUG.ENABLED) {
+        console.log(`Minimum search length set to ${SEARCH_PREFS.CUSTOM.LENGTH.MIN}`);
+      }
+    }
+  });
+  ui.maxLengthInput.addEventListener("blur", () => {
+    const input = ui.maxLengthInput;
+    const value = input.value.trim();
+    if (value === "") return;
+    const num = Number(value);
+    if (!isNaN(num)) {
+      SEARCH_PREFS.CUSTOM.LENGTH.MAX = num;
+      if (DEBUG.ENABLED) {
+        console.log(`Maximum search length set to ${SEARCH_PREFS.CUSTOM.LENGTH.MAX}`);
+      }
+    }
+  });
+}
+function initSearchAmounts() {
+  ui.searchAmountContainer = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.SEARCH_LIMITS_CONTAINER.SEARCH_AMOUNT_CONTAINER));
+  ui.searchAmountInputContainer = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.SEARCH_LIMITS_CONTAINER.SEARCH_AMOUNT_CONTAINER.SEARCH_AMOUNT_INPUT_CONTAINER));
+  ui.searchAmountInput = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.SEARCH_LIMITS_CONTAINER.SEARCH_AMOUNT_CONTAINER.SEARCH_AMOUNT_INPUT_CONTAINER.SEARCH_AMOUNT_INPUT));
+  ui.searchAmountInput.addEventListener("blur", () => {
+    const input = ui.searchAmountInput;
+    const value = input.value.trim();
+    if (value === "") return;
+    const num = Number(value);
+    if (!isNaN(num)) {
+      SEARCH_PREFS.LIMITS.RETRIES = num;
+      if (DEBUG.ENABLED) {
+        console.log(`Search amount set to ${SEARCH_PREFS.LIMITS.RETRIES}`);
+      }
+    }
+  });
+}
+function initBatchSize() {
+  ui.batchSizeContainer = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.SEARCH_LIMITS_CONTAINER.BATCH_SIZE_CONTAINER));
+  ui.batchSizeInputContainer = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.SEARCH_LIMITS_CONTAINER.BATCH_SIZE_CONTAINER.BATCH_SIZE_INPUT_CONTAINER));
+  ui.batchSizeInput = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.SEARCH_LIMITS_CONTAINER.BATCH_SIZE_CONTAINER.BATCH_SIZE_INPUT_CONTAINER.BATCH_SIZE_INPUT));
+  ui.batchSizeInput.addEventListener("blur", () => {
+    const input = ui.batchSizeInput;
+    const value = input.value.trim();
+    if (value === "") return;
+    const num = Number(value);
+    if (!isNaN(num)) {
+      SEARCH_PREFS.LIMITS.BATCH = num;
+      if (DEBUG.ENABLED) {
+        console.log(`Batch size set to ${SEARCH_PREFS.LIMITS.BATCH}`);
+      }
+    }
+  });
+}
+function initBatchInterval() {
+  ui.batchIntervalContainer = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.SEARCH_LIMITS_CONTAINER.BATCH_INTERVAL_CONTAINER));
+  ui.batchIntervalInputContainer = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.SEARCH_LIMITS_CONTAINER.BATCH_INTERVAL_CONTAINER.BATCH_INTERVAL_INPUT_CONTAINER));
+  ui.batchIntervalInput = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.SEARCH_LIMITS_CONTAINER.BATCH_INTERVAL_CONTAINER.BATCH_INTERVAL_INPUT_CONTAINER.BATCH_INTERVAL_INPUT));
+  ui.batchIntervalInput.addEventListener("blur", () => {
+    const input = ui.batchIntervalInput;
+    const value = input.value.trim();
+    if (value === "") return;
+    const num = Number(value);
+    if (!isNaN(num)) {
+      SEARCH_PREFS.LIMITS.BATCH_INTERVAL = num;
+      if (DEBUG.ENABLED) {
+        console.log(`Batch interval set to ${SEARCH_PREFS.LIMITS.BATCH_INTERVAL}`);
+      }
+    }
+  });
+}
+function initConcurrentRequests() {
+  ui.concurrentRequestsContainer = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.SEARCH_LIMITS_CONTAINER.CONCURRENT_REQUESTS_CONTAINER));
+  ui.concurrentRequestsInputContainer = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.SEARCH_LIMITS_CONTAINER.CONCURRENT_REQUESTS_CONTAINER.CONCURRENT_REQUESTS_INPUT_CONTAINER));
+  ui.concurrentRequestsInput = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.SEARCH_LIMITS_CONTAINER.CONCURRENT_REQUESTS_CONTAINER.CONCURRENT_REQUESTS_INPUT_CONTAINER.CONCURRENT_REQUESTS_INPUT));
+  ui.concurrentRequestsInput.addEventListener("blur", () => {
+    const input = ui.concurrentRequestsInput;
+    const value = input.value.trim();
+    if (value === "") return;
+    const num = Number(value);
+    if (!isNaN(num)) {
+      SEARCH_PREFS.LIMITS.MAX_CONCURRENT_REQUESTS = num;
+      if (DEBUG.ENABLED) {
+        console.log(`Concurrent requests set to ${SEARCH_PREFS.LIMITS.MAX_CONCURRENT_REQUESTS}`);
+      }
+    }
+  });
+}
+function initTimeoutLimits() {
+  ui.timeoutLimit = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.TIMEOUT_LIMITS_CONTAINER.TIMEOUT_LIMIT));
+  ui.timeoutLimitInputContainer = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.TIMEOUT_LIMITS_CONTAINER.TIMEOUT_LIMIT.TIMEOUT_LIMIT_INPUT_CONTAINER));
+  ui.timeoutLimitInput = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.TIMEOUT_LIMITS_CONTAINER.TIMEOUT_LIMIT.TIMEOUT_LIMIT_INPUT_CONTAINER.TIMEOUT_LIMIT_INPUT));
+  ui.timeoutLimitInput.addEventListener("blur", () => {
+    const input = ui.timeoutLimitInput;
+    const value = input.value.trim();
+    if (value === "") return;
+    const num = Number(value);
+    if (!isNaN(num)) {
+      SEARCH_PREFS.LIMITS.TIMEOUT = num;
+      if (DEBUG.ENABLED) {
+        console.log(`Timeout limit set to ${SEARCH_PREFS.LIMITS.TIMEOUT}`);
+      }
+    }
+  });
+}
+function initFallbackLimits() {
+  ui.fallbackTimeoutLimit = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.FALLBACK_LIMITS_CONTAINER.FALLBACK_TIMEOUT_LIMIT));
+  ui.fallbackTimeoutLimitInputContainer = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.FALLBACK_LIMITS_CONTAINER.FALLBACK_TIMEOUT_LIMIT.FALLBACK_TIMEOUT_LIMIT_INPUT_CONTAINER));
+  ui.fallbackTimeoutLimitInput = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.FALLBACK_LIMITS_CONTAINER.FALLBACK_TIMEOUT_LIMIT.FALLBACK_TIMEOUT_LIMIT_INPUT_CONTAINER.FALLBACK_TIMEOUT_LIMIT_INPUT));
+  ui.fallbackTimeoutLimitInput.addEventListener("blur", () => {
+    const input = ui.fallbackTimeoutLimitInput;
+    const value = input.value.trim();
+    if (value === "") return;
+    const num = Number(value);
+    if (!isNaN(num)) {
+      SEARCH_PREFS.LIMITS.FALLBACK.TIMEOUT = num;
+      if (DEBUG.ENABLED) {
+        console.log(`Fallback timeout limit set to ${SEARCH_PREFS.LIMITS.FALLBACK.TIMEOUT}`);
+      }
+    }
+  });
+  ui.fallbackRetriesLimit = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.FALLBACK_LIMITS_CONTAINER.FALLBACK_RETRIES_LIMIT));
+  ui.fallbackRetriesLimitInputContainer = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.FALLBACK_LIMITS_CONTAINER.FALLBACK_RETRIES_LIMIT.FALLBACK_RETRIES_LIMIT_INPUT_CONTAINER));
+  ui.fallbackRetriesLimitInput = createElement(sanitize(INTERFACE.CONTAINERS.ADVANCED_CONTAINER.FALLBACK_LIMITS_CONTAINER.FALLBACK_RETRIES_LIMIT.FALLBACK_RETRIES_LIMIT_INPUT_CONTAINER.FALLBACK_RETRIES_LIMIT_INPUT));
+  ui.fallbackRetriesLimitInput.addEventListener("blur", () => {
+    const input = ui.fallbackRetriesLimitInput;
+    const value = input.value.trim();
+    if (value === "") return;
+    const num = Number(value);
+    if (!isNaN(num)) {
+      SEARCH_PREFS.LIMITS.FALLBACK.RETRIES = num;
+      if (DEBUG.ENABLED) {
+        console.log(`Fallback retries limit set to ${SEARCH_PREFS.LIMITS.FALLBACK.RETRIES}`);
+      }
+    }
+  });
 }
 function initSearch() {
   ui.customInputContainer = createElement(sanitize(INTERFACE.CONTAINERS.CUSTOM_INPUT_CONTAINER));
@@ -6688,6 +7705,17 @@ function initSearch() {
   ui.searchButton = createElement(sanitize(INTERFACE.BUTTONS.SEARCH));
   ui.progressWrapper = createElement(sanitize(INTERFACE.SLIDERS.PROGRESS_SLIDER.WRAPPER));
   ui.progressFill = createElement(sanitize(INTERFACE.SLIDERS.PROGRESS_SLIDER.FILL));
+  ProgressEvents.on((percent) => {
+    ui.progressFill.style.width = `${Math.floor(percent * 100)}%`;
+  });
+  ui.searchButton.addEventListener("click", () => {
+    if (state.isSearching) {
+      cancelSearch();
+      return;
+    }
+    ui.progressFill.style.width = "0%";
+    search();
+  });
 }
 function setText(id, text) {
   const element = ui[id];
@@ -6696,64 +7724,629 @@ function setText(id, text) {
   }
 }
 function toggleTab(tab) {
-  const isOptionsTab = tab === ui.optionsTab;
   if (tab.classList.contains("active")) return;
-  ui.optionsTab.classList.remove("active");
-  ui.resultsTab.classList.remove("active");
-  tab.classList.add("active");
-  if (isOptionsTab) {
-    ui.menu.classList.add("active");
-    ui.menu.classList.remove("hidden");
-    ui.results.classList.remove("active");
-    ui.results.classList.add("hidden");
-  } else {
-    ui.menu.classList.remove("active");
-    ui.menu.classList.add("hidden");
-    ui.results.classList.add("active");
-    ui.results.classList.remove("hidden");
-  }
+  const tabs = [ui.optionsTab, ui.resultsTab, ui.helpTab];
+  const containers = [ui.menu, ui.results, ui.help];
+  tabs.forEach((t) => t.classList.remove("active"));
+  containers.forEach((c2) => {
+    c2.classList.remove("active");
+    c2.classList.add("hidden");
+  });
+  const index = tabs.indexOf(tab);
+  if (index === -1) return;
+  tabs[index].classList.add("active");
+  containers[index].classList.add("active");
+  containers[index].classList.remove("hidden");
   if (DEBUG.ENABLED) {
-    console.log(`Tab switched to ${isOptionsTab ? "Options" : "Results"}`);
+    console.log(`Tab switched to ${tab.id || index}`);
+  }
+}
+function toggleSubtab(activeButton) {
+  ui.filtersSubtab.classList.remove("active");
+  ui.searchSettingsSubtab.classList.remove("active");
+  ui.advancedSubtab.classList.remove("active");
+  ui.filtersContainer.classList.remove("active");
+  ui.searchSettingsContainer.classList.remove("active");
+  ui.advancedContainer.classList.remove("active");
+  activeButton.classList.add("active");
+  switch (activeButton) {
+    case ui.filtersSubtab:
+      ui.filtersContainer.classList.add("active");
+      break;
+    case ui.searchSettingsSubtab:
+      ui.searchSettingsContainer.classList.add("active");
+      break;
+    case ui.advancedSubtab:
+      ui.advancedContainer.classList.add("active");
+      break;
   }
 }
 function renderValidResult(url) {
+  const match = url.match(/^(?:https?:\/\/)?(?:www\.)?([^\/]+)/i);
+  let displayName = url;
+  if (match && match[1]) {
+    displayName = match[1];
+  }
   const resultDiv = document.createElement("div");
   resultDiv.className = INTERFACE.CONTAINERS.RESULT.CLASS;
   const link = document.createElement("a");
   link.href = url;
   link.target = "_blank";
   link.rel = "noopener noreferrer";
-  link.textContent = url;
+  link.textContent = displayName;
   resultDiv.appendChild(link);
   ui.results.appendChild(resultDiv);
 }
 ValidResultEvents.on(renderValidResult);
+function updateClusterWeightFill(value) {
+  const percent = Math.floor(value * 100);
+  if (ui.clusterWeightFill) {
+    ui.clusterWeightFill.style.width = `${percent}%`;
+  }
+}
+
+// src/GenerationConfig.ts
+var PATTERNS = [
+  // Short patterns (3-5 chars)
+  { pattern: "cvc", weight: 15 },
+  //cat, dog, sun
+  { pattern: "cvcc", weight: 12 },
+  //hand, wolf, park
+  { pattern: "ccvc", weight: 8 },
+  //stop, plan, true
+  { pattern: "cvcv", weight: 10 },
+  //hero, data, baby
+  { pattern: "vcv", weight: 6 },
+  //age, ice, eye
+  { pattern: "vcc", weight: 5 },
+  //and, end, old
+  { pattern: "ccv", weight: 4 },
+  //sky, try, fly
+  { pattern: "vccv", weight: 6 },
+  //also, into, open
+  { pattern: "cvv", weight: 4 },
+  //sea, tea, zoo
+  { pattern: "ccvv", weight: 3 },
+  //blue, true, free
+  // Medium patterns (4-7 chars)
+  { pattern: "cvcvc", weight: 20 },
+  //basic, magic, music
+  { pattern: "cvccv", weight: 15 },
+  //apple, simple, table
+  { pattern: "ccvcv", weight: 8 },
+  //drama, price, place
+  { pattern: "cvcvv", weight: 5 },
+  //video, radio, piano
+  { pattern: "vccvc", weight: 6 },
+  //under, after, other
+  { pattern: "vcvcv", weight: 7 },
+  //again, above, about
+  { pattern: "ccvcc", weight: 6 },
+  //block, plant, front
+  { pattern: "cvccc", weight: 4 },
+  //world, first, worst
+  { pattern: "ccccv", weight: 2 },
+  //street, strong
+  { pattern: "vcvcc", weight: 5 },
+  //event, actor, order
+  { pattern: "cvcvcc", weight: 8 },
+  //better, center, winter
+  { pattern: "cvccvc", weight: 10 },
+  //market, garden, person
+  // Longer patterns (6+ chars)
+  { pattern: "cvcvcv", weight: 12 },
+  //banana, camera, canada
+  { pattern: "cvccvcv", weight: 5 },
+  //fantastic, calendar
+  { pattern: "cvcvcvc", weight: 8 },
+  //america, develop, computer
+  { pattern: "vcvcvc", weight: 6 },
+  //elephant, umbrella
+  { pattern: "cvcvcvv", weight: 4 },
+  //dangerous, beautiful
+  { pattern: "ccvcvcv", weight: 5 },
+  //traveling, different
+  { pattern: "vcvccvc", weight: 4 },
+  //important, understand
+  { pattern: "cvcvccv", weight: 4 },
+  //remember, september
+  { pattern: "ccvcvcc", weight: 3 },
+  //progress, connect
+  { pattern: "cvcvcvcv", weight: 6 },
+  //absolutely, television
+  { pattern: "vcvcvcv", weight: 4 },
+  //economy, democracy
+  { pattern: "ccvcvcvc", weight: 3 },
+  //practical, specific
+  { pattern: "cvcccvc", weight: 3 },
+  //children, standard
+  { pattern: "cvccvcvc", weight: 4 },
+  //wonderful, political
+  { pattern: "vcvcvcvc", weight: 3 },
+  //helicopter, refrigerator
+  // Extra long patterns (8+ chars)
+  { pattern: "cvcvcvcvc", weight: 3 },
+  //communication, organization
+  { pattern: "ccvcvcvcv", weight: 2 },
+  //representative
+  { pattern: "cvcvcvcvcv", weight: 2 },
+  //responsibility
+  { pattern: "vcvcvcvcv", weight: 2 }
+  //international
+];
+var CLUSTERS = [
+  // Common consonant clusters
+  { pattern: "th", weight: 25 },
+  //the, think, both
+  { pattern: "st", weight: 20 },
+  //stop, best, first
+  { pattern: "ch", weight: 18 },
+  //child, much, beach
+  { pattern: "sh", weight: 15 },
+  //show, fish, wish
+  { pattern: "ng", weight: 15 },
+  //sing, long, thing
+  { pattern: "nt", weight: 12 },
+  //want, front, point
+  { pattern: "nd", weight: 12 },
+  //hand, kind, around
+  { pattern: "ck", weight: 10 },
+  //back, check, quick
+  { pattern: "ll", weight: 10 },
+  //call, well, tell
+  { pattern: "ss", weight: 8 },
+  //class, less, kiss
+  { pattern: "tt", weight: 6 },
+  //better, letter, little
+  { pattern: "pp", weight: 5 },
+  //happy, apple, pepper
+  { pattern: "ff", weight: 5 },
+  //off, stuff, coffee
+  { pattern: "mm", weight: 4 },
+  //summer, hammer, common
+  { pattern: "nn", weight: 4 },
+  //funny, dinner, cannot
+  { pattern: "rr", weight: 3 },
+  //sorry, carry, mirror
+  { pattern: "dd", weight: 3 },
+  //add, middle, sudden
+  { pattern: "bb", weight: 2 },
+  //rabbit, hobby, bubble
+  { pattern: "gg", weight: 2 },
+  //bigger, egg,agger
+  // Common vowel clusters
+  { pattern: "ee", weight: 12 },
+  //see, tree, free
+  { pattern: "oo", weight: 10 },
+  //book, good, food
+  { pattern: "ea", weight: 8 },
+  //sea, read, beach
+  { pattern: "ou", weight: 8 },
+  //house, about, mouth
+  { pattern: "ai", weight: 6 },
+  //main, rain, again
+  { pattern: "ie", weight: 6 },
+  //piece, field, believe
+  { pattern: "ue", weight: 4 },
+  //blue, true, value
+  { pattern: "oa", weight: 4 },
+  //boat, road, soap
+  { pattern: "au", weight: 3 },
+  //because, caught, laugh
+  { pattern: "ei", weight: 3 },
+  //receive, eight, weight
+  // Common consonant-vowel clusters
+  { pattern: "er", weight: 20 },
+  //water, after, other
+  { pattern: "re", weight: 15 },
+  //more, here, where
+  { pattern: "or", weight: 12 },
+  //for, work, word
+  { pattern: "ar", weight: 10 },
+  //car, part, start
+  { pattern: "le", weight: 10 },
+  //table, people, little
+  { pattern: "en", weight: 8 },
+  //when, then, open
+  { pattern: "an", weight: 8 },
+  //man, can, plan
+  { pattern: "on", weight: 6 },
+  //on, long, front
+  { pattern: "in", weight: 6 },
+  //in, thing, begin
+  { pattern: "al", weight: 6 },
+  //all, also, small
+  { pattern: "ed", weight: 6 },
+  //asked, worked, played
+  { pattern: "es", weight: 6 },
+  //yes, goes, comes
+  { pattern: "ly", weight: 5 },
+  //only, really, family
+  { pattern: "ty", weight: 4 },
+  //city, party, empty
+  { pattern: "ny", weight: 3 }
+  //any, many, funny
+];
+var SYLLABLES = [
+  // Single vowels
+  { pattern: "a", weight: 10 },
+  { pattern: "e", weight: 10 },
+  { pattern: "i", weight: 10 },
+  { pattern: "o", weight: 10 },
+  { pattern: "u", weight: 10 },
+  // Open syllables (CV)
+  { pattern: "ka", weight: 8 },
+  { pattern: "ta", weight: 8 },
+  { pattern: "ma", weight: 8 },
+  { pattern: "la", weight: 8 },
+  { pattern: "ra", weight: 8 },
+  { pattern: "sa", weight: 7 },
+  { pattern: "na", weight: 7 },
+  { pattern: "fa", weight: 6 },
+  { pattern: "za", weight: 4 },
+  { pattern: "ba", weight: 6 },
+  { pattern: "da", weight: 6 },
+  { pattern: "pa", weight: 6 },
+  { pattern: "ga", weight: 5 },
+  { pattern: "ha", weight: 4 },
+  // Vowel clusters
+  { pattern: "ai", weight: 6 },
+  { pattern: "ea", weight: 6 },
+  { pattern: "io", weight: 6 },
+  { pattern: "ou", weight: 6 },
+  { pattern: "ue", weight: 5 },
+  { pattern: "oa", weight: 5 },
+  { pattern: "ee", weight: 5 },
+  { pattern: "oo", weight: 5 },
+  // Closed syllables (CVC)
+  { pattern: "ban", weight: 6 },
+  { pattern: "ton", weight: 6 },
+  { pattern: "lek", weight: 5 },
+  { pattern: "dar", weight: 5 },
+  { pattern: "mur", weight: 5 },
+  { pattern: "vek", weight: 4 },
+  { pattern: "zul", weight: 4 },
+  { pattern: "tor", weight: 5 },
+  { pattern: "gen", weight: 5 },
+  { pattern: "val", weight: 5 },
+  { pattern: "lor", weight: 4 },
+  { pattern: "bur", weight: 4 },
+  { pattern: "rin", weight: 4 },
+  // Suffix-style or final syllables
+  { pattern: "el", weight: 6 },
+  { pattern: "en", weight: 6 },
+  { pattern: "in", weight: 6 },
+  { pattern: "on", weight: 6 },
+  { pattern: "un", weight: 5 },
+  { pattern: "er", weight: 6 },
+  { pattern: "ar", weight: 5 },
+  { pattern: "or", weight: 5 },
+  { pattern: "ix", weight: 4 },
+  { pattern: "us", weight: 4 },
+  { pattern: "et", weight: 4 },
+  { pattern: "ly", weight: 3 },
+  { pattern: "sy", weight: 3 },
+  { pattern: "ty", weight: 3 },
+  { pattern: "ny", weight: 3 },
+  // Brand/tech style
+  { pattern: "lux", weight: 4 },
+  { pattern: "nex", weight: 4 },
+  { pattern: "kor", weight: 4 },
+  { pattern: "tron", weight: 4 },
+  { pattern: "dex", weight: 3 },
+  { pattern: "zon", weight: 3 },
+  { pattern: "bit", weight: 3 },
+  { pattern: "byte", weight: 3 },
+  { pattern: "pha", weight: 3 },
+  { pattern: "dro", weight: 3 },
+  { pattern: "chi", weight: 3 },
+  { pattern: "noz", weight: 2 },
+  { pattern: "xil", weight: 2 },
+  { pattern: "gral", weight: 2 },
+  { pattern: "tros", weight: 2 }
+];
+
+// src/Generation.ts
+var customWord = null;
+function getCustomWord() {
+  const input = ui.customInput;
+  const word = input?.value.trim();
+  if (DEBUG.ENABLED && word) {
+    console.log(`Getting custom word: ${word}`);
+  }
+  customWord = word || null;
+  return word ? word.toLowerCase() : null;
+}
+function generateRandomURL(domain) {
+  const selected = getSelectedFilters();
+  const filterSelections = selected.filter(([group]) => group in dict);
+  const length = randomInt(SEARCH_PREFS.CUSTOM.LENGTH.MIN, SEARCH_PREFS.CUSTOM.LENGTH.MAX);
+  let randPart = "";
+  if (filterSelections.length === 0) {
+    switch (SEARCH_PREFS.CUSTOM.RANDOM) {
+      case RANDOM_MODE.RANDOM:
+        randPart = randomString(SEARCH_PREFS.CUSTOM.CHARACTERS, length);
+        break;
+      case RANDOM_MODE.PHONETIC:
+        randPart = generatePhoneticWord(length);
+        break;
+      case RANDOM_MODE.SYLLABLE:
+        randPart = generateSyllables(length);
+        break;
+    }
+  } else {
+    const parts = [];
+    for (const [group, key] of selected) {
+      const entry = dict[group][key];
+      const wordList = getWordList(entry);
+      if (wordList.length > 0) {
+        const word = wordList[Math.floor(Math.random() * wordList.length)];
+        parts.push(word.toLowerCase());
+        if (DEBUG.ENABLED && !DEBUG.QUIET) {
+          console.log(`[${group}.${key}] \u2192 Sample: "${word}" (${wordList.length} words)`);
+        }
+      } else if (DEBUG.ENABLED) {
+        console.warn(`[${group}.${key}] \u2192 No usable word list.`);
+      }
+    }
+    let joined = parts.join("");
+    if (joined.length > length) {
+      joined = joined.slice(0, length);
+    }
+    const remaining = length - joined.length;
+    if (remaining > 0 && Math.random() < SEARCH_PREFS.CUSTOM.CLUSTER_CHANCE) {
+      let extra = "";
+      for (let attempt = 0; attempt < 10 && extra.length < remaining; attempt++) {
+        let fragment = "";
+        switch (SEARCH_PREFS.CUSTOM.RANDOM) {
+          case RANDOM_MODE.RANDOM:
+            if (Math.random() < SEARCH_PREFS.CUSTOM.CLUSTER_CHANCE) {
+              fragment = generateWithClusters(remaining - extra.length, SEARCH_PREFS.CUSTOM.LENGTH.MIN);
+            } else {
+              fragment = randomString(SEARCH_PREFS.CUSTOM.CHARACTERS, remaining - extra.length);
+            }
+            break;
+          case RANDOM_MODE.PHONETIC:
+            fragment = generatePhoneticWord(remaining - extra.length);
+            break;
+          case RANDOM_MODE.SYLLABLE:
+            fragment = generateSyllables(remaining - extra.length);
+            break;
+        }
+        if (fragment.length + extra.length <= remaining) {
+          extra += fragment;
+        }
+      }
+      joined += extra;
+    }
+    randPart = joined;
+  }
+  if (!customWord) customWord = getCustomWord();
+  if (customWord) {
+    switch (SEARCH_PREFS.CUSTOM.INSERT) {
+      case "prefix":
+        randPart = customWord + randPart;
+        break;
+      case "suffix":
+        randPart = randPart + customWord;
+        break;
+      default:
+        randPart = insertWordRandomly(randPart, customWord);
+    }
+  }
+  let finalUrl = `${SEARCH_PREFS.BASE}${randPart}${domain}`;
+  let maxRetries = 5;
+  while (sessionResults.has(finalUrl) && maxRetries-- > 0) {
+    randPart = SEARCH_PREFS.CUSTOM.RANDOM ? randomString(SEARCH_PREFS.CUSTOM.CHARACTERS, randomInt(SEARCH_PREFS.CUSTOM.LENGTH.MIN, SEARCH_PREFS.CUSTOM.LENGTH.MAX)) : generateSyllables(randomInt(SEARCH_PREFS.CUSTOM.LENGTH.MIN, SEARCH_PREFS.CUSTOM.LENGTH.MAX));
+    if (customWord) {
+      switch (SEARCH_PREFS.CUSTOM.INSERT) {
+        case "prefix":
+          randPart = customWord + randPart;
+          break;
+        case "suffix":
+          randPart = randPart + customWord;
+          break;
+        default:
+          randPart = insertWordRandomly(randPart, customWord);
+      }
+    }
+    finalUrl = `${SEARCH_PREFS.BASE}${randPart}${domain}`;
+  }
+  return finalUrl;
+}
+function generateSyllables(maxLength) {
+  let word = "";
+  const minLength = SEARCH_PREFS.CUSTOM.LENGTH.MIN;
+  const usedSyllables = /* @__PURE__ */ new Set();
+  while (word.length < maxLength && word.length < minLength + 4) {
+    const validSyllables = SYLLABLES.filter(
+      (syl) => syl.pattern.length <= maxLength - word.length && !usedSyllables.has(syl.pattern)
+    );
+    if (validSyllables.length === 0) break;
+    const totalWeight = validSyllables.reduce((sum, s) => sum + s.weight, 0);
+    let random = Math.random() * totalWeight;
+    for (const syl of validSyllables) {
+      random -= syl.weight;
+      if (random <= 0) {
+        word += syl.pattern;
+        usedSyllables.add(syl.pattern);
+        break;
+      }
+    }
+  }
+  if (word.length < minLength) {
+    const vowels = CHARACTERS.CHARACTER_TYPE.VOWELS;
+    while (word.length < minLength) {
+      word += vowels[Math.floor(Math.random() * vowels.length)];
+    }
+  }
+  return word.slice(0, maxLength);
+}
+function generatePhoneticWord(maxLength) {
+  const vowels = CHARACTERS.CHARACTER_TYPE.VOWELS;
+  const consonants = CHARACTERS.CHARACTER_TYPE.CONSONANTS;
+  const minLength = SEARCH_PREFS.CUSTOM.LENGTH.MIN;
+  if (Math.random() < SEARCH_PREFS.CUSTOM.CLUSTER_CHANCE) {
+    return generateWithClusters(maxLength, minLength);
+  }
+  return generateWithEnhancedPatterns(maxLength, minLength, vowels, consonants);
+}
+function generateWithClusters(maxLength, minLength) {
+  let word = "";
+  const usedClusters = /* @__PURE__ */ new Set();
+  while (word.length < maxLength && word.length < minLength + 4) {
+    const validCombos = CLUSTERS.filter(
+      (combo) => combo.pattern.length <= maxLength - word.length && !usedClusters.has(combo.pattern)
+    );
+    if (validCombos.length === 0) break;
+    const totalWeight = validCombos.reduce((sum, c2) => sum + c2.weight, 0);
+    let random = Math.random() * totalWeight;
+    for (const combo of validCombos) {
+      random -= combo.weight;
+      if (random <= 0) {
+        word += combo.pattern;
+        usedClusters.add(combo.pattern);
+        break;
+      }
+    }
+  }
+  while (word.length < minLength) {
+    const vowels = CHARACTERS.CHARACTER_TYPE.VOWELS;
+    word += vowels[Math.floor(Math.random() * vowels.length)];
+  }
+  return word.slice(0, maxLength);
+}
+function generateWithEnhancedPatterns(maxLength, minLength, vowels, consonants) {
+  const validPatterns = PATTERNS.filter(
+    (p) => p.pattern.length >= minLength && p.pattern.length <= maxLength
+  );
+  if (validPatterns.length === 0) {
+    return generateFallbackPattern(maxLength, minLength, vowels, consonants);
+  }
+  const totalWeight = validPatterns.reduce((sum, p) => sum + p.weight, 0);
+  let random = Math.random() * totalWeight;
+  let selectedPattern = validPatterns[0].pattern;
+  for (const patternObj of validPatterns) {
+    random -= patternObj.weight;
+    if (random <= 0) {
+      selectedPattern = patternObj.pattern;
+      break;
+    }
+  }
+  return buildEnhancedWordFromPattern(selectedPattern, vowels, consonants);
+}
+function buildEnhancedWordFromPattern(pattern, vowels, consonants) {
+  let word = "";
+  for (let i = 0; i < pattern.length; i++) {
+    const char = pattern[i];
+    const nextChar = pattern[i + 1];
+    if (char === "c") {
+      if (nextChar && Math.random() < 0.2) {
+        const validCombos = CLUSTERS.filter(
+          (combo) => combo.pattern.length === 2 && i + 1 < pattern.length && (char === "c" && nextChar === "c" || char === "c" && nextChar === "v")
+        );
+        if (validCombos.length > 0) {
+          const combo = validCombos[Math.floor(Math.random() * validCombos.length)];
+          word += combo.pattern;
+          i++;
+          continue;
+        }
+      }
+      word += consonants[Math.floor(Math.random() * consonants.length)];
+    } else if (char === "v") {
+      if (nextChar === "v" && Math.random() < 0.15) {
+        const vowelCombos = CLUSTERS.filter(
+          (combo) => combo.pattern.length === 2 && /^[aeiou]{2}$/.test(combo.pattern)
+        );
+        if (vowelCombos.length > 0) {
+          const combo = vowelCombos[Math.floor(Math.random() * vowelCombos.length)];
+          word += combo.pattern;
+          i++;
+          continue;
+        }
+      }
+      word += vowels[Math.floor(Math.random() * vowels.length)];
+    }
+  }
+  return word;
+}
+function generateFallbackPattern(maxLength, minLength, vowels, consonants) {
+  let pattern = "";
+  let useConsonant = true;
+  for (let i = 0; i < Math.min(maxLength, Math.max(minLength, 4)); i++) {
+    pattern += useConsonant ? "c" : "v";
+    useConsonant = !useConsonant;
+  }
+  return buildEnhancedWordFromPattern(pattern, vowels, consonants);
+}
+function insertWordRandomly(base, word) {
+  const pos = randomInt(0, base.length);
+  return base.slice(0, pos) + word + base.slice(pos);
+}
 
 // src/Main.ts
 var state = {
-  isSearching: false
+  isSearching: false,
+  isProcessingTimeouts: false,
+  isPremium: false
 };
+var plugins = {
+  ethers: window.ethers,
+  sypher: window.sypher
+};
+var c = {};
+InterfaceInitEvents.on(() => {
+  if (DEBUG.ENABLED) {
+    console.log("UI created:", ui);
+  }
+  plugins.sypher.init({
+    interface: {
+      button: {
+        type: "connect",
+        text: "Login",
+        modal: true,
+        append: ui.header
+      }
+    },
+    crypto: {
+      chain: "base",
+      contractAddress: "0x21b9D428EB20FA075A29d51813E57BAb85406620",
+      poolAddress: "0xB0fbaa5c7D28B33Ac18D9861D4909396c1B8029b",
+      pairAddress: "0x4200000000000000000000000000000000000006",
+      version: "V3",
+      icon: "https://github.com/Tukyo/sypherbot-public/blob/main/assets/img/botpic.png?raw=true"
+    }
+  });
+});
+window.addEventListener("sypher:initCrypto", function(event) {
+  (async () => {
+    c = event.detail;
+    let tb = c.user.tokenBalance;
+    if (DEBUG.ENABLED) {
+      console.log("Crypto:", c);
+    }
+    if (check(tb)) {
+      state.isPremium = true;
+      updatePremium();
+    }
+  })();
+});
 initInterface();
 async function search() {
   if (state.isSearching) return;
   state.isSearching = true;
   setText("searchButton", "Cancel");
+  clearQueue();
   let attempts = 0;
   let progress = 0;
   if (DEBUG.ENABLED) {
     console.log("Starting search with preferences:", SEARCH_PREFS);
   }
-  const progressTimer = setInterval(() => {
-    if (progress < 1) {
-      progress += 5e-3;
-      ProgressEvents.emit(progress);
-    }
-  }, 500);
   try {
     const globalBatchSet = /* @__PURE__ */ new Set();
     const batchPromises = [];
-    for (let i2 = 0; i2 < SEARCH_PREFS.LIMITS.RETRIES; i2 += SEARCH_PREFS.LIMITS.BATCH) {
-      const batchDelay = i2 === 0 ? 0 : SEARCH_PREFS.LIMITS.BUFFER;
+    for (let i = 0; i < SEARCH_PREFS.LIMITS.RETRIES; i += SEARCH_PREFS.LIMITS.BATCH) {
+      const batchDelay = i === 0 ? 0 : SEARCH_PREFS.LIMITS.BATCH_INTERVAL;
       const batchPromise = new Promise((resolve) => {
         setTimeout(async () => {
           if (!state.isSearching) {
@@ -6763,15 +8356,19 @@ async function search() {
           const batchSet = /* @__PURE__ */ new Set();
           const batch = [];
           while (batch.length < SEARCH_PREFS.LIMITS.BATCH) {
-            const domain = SEARCH_PREFS.DOMAINS[Math.floor(Math.random() * SEARCH_PREFS.DOMAINS.length)];
+            const enabledDomains = Object.entries(SEARCH_PREFS.DOMAINS).filter(([, isEnabled]) => isEnabled).map(([domain2]) => domain2);
+            if (enabledDomains.length === 0) {
+              throw new Error("No domains are enabled. Please select at least one.");
+            }
+            const domain = enabledDomains[Math.floor(Math.random() * enabledDomains.length)];
             const url = generateRandomURL(domain);
             if (!batchSet.has(url) && !sessionResults.has(url) && !globalBatchSet.has(url)) {
               batchSet.add(url);
               globalBatchSet.add(url);
-              batch.push({ url, promise: checkUrl(url) });
+              batch.push({ url, promise: throttle2(() => checkUrl(url)) });
             }
           }
-          const batchIndex = Math.floor(i2 / SEARCH_PREFS.LIMITS.BATCH) + 1;
+          const batchIndex = Math.floor(i / SEARCH_PREFS.LIMITS.BATCH) + 1;
           try {
             const results = await Promise.all(batch.map((b) => b.promise));
             if (!state.isSearching) {
@@ -6814,200 +8411,10 @@ async function search() {
       console.warn("No working URLs found after maximum retries.");
     }
   } finally {
-    clearInterval(progressTimer);
     ProgressEvents.emit(1);
     state.isSearching = false;
     setText("searchButton", "Search");
   }
-}
-var customWord = null;
-function getCustomWord() {
-  const input = ui.customInput;
-  const word = input?.value.trim();
-  if (DEBUG.ENABLED && word) {
-    console.log(`Getting custom word: ${word}`);
-  }
-  customWord = word || null;
-  return word ? word.toLowerCase() : null;
-}
-function generateRandomURL(domain) {
-  const selected = getSelectedFilters();
-  const length = randomInt(SEARCH_PREFS.CUSTOM.LENGTH.MIN, SEARCH_PREFS.CUSTOM.LENGTH.MAX);
-  let randPart = "";
-  if (selected.length === 0) {
-    switch (SEARCH_PREFS.CUSTOM.RANDOM) {
-      case RANDOM_MODE.RAW:
-        randPart = randomString(SEARCH_PREFS.CUSTOM.CHARACTERS, length);
-        break;
-      case RANDOM_MODE.PHONETIC:
-        randPart = generatePhoneticWord(length);
-        break;
-      case RANDOM_MODE.DICTIONARY:
-        randPart = generateRealisticWord(length);
-        break;
-    }
-  } else {
-    const parts = [];
-    for (const [group, key] of selected) {
-      const entry = dict[group][key];
-      const wordList = getWordList(entry);
-      if (wordList.length > 0) {
-        const word = wordList[Math.floor(Math.random() * wordList.length)];
-        parts.push(word.toLowerCase());
-        if (DEBUG.ENABLED && !DEBUG.QUIET) {
-          console.log(`[${group}.${key}] \u2192 Sample: "${word}" (${wordList.length} words)`);
-        }
-      } else if (DEBUG.ENABLED) {
-        console.warn(`[${group}.${key}] \u2192 No usable word list.`);
-      }
-    }
-    randPart = parts.join("");
-    if (randPart.length > length) randPart = randPart.slice(0, length);
-  }
-  if (!customWord) customWord = getCustomWord();
-  if (customWord) {
-    switch (SEARCH_PREFS.CUSTOM.INSERT) {
-      case "prefix":
-        randPart = customWord + randPart;
-        break;
-      case "suffix":
-        randPart = randPart + customWord;
-        break;
-      default:
-        randPart = insertWordRandomly(randPart, customWord);
-    }
-  }
-  let finalUrl = `${SEARCH_PREFS.BASE}${randPart}${domain}`;
-  let maxRetries = 5;
-  while (sessionResults.has(finalUrl) && maxRetries-- > 0) {
-    randPart = SEARCH_PREFS.CUSTOM.RANDOM ? randomString(SEARCH_PREFS.CUSTOM.CHARACTERS, randomInt(SEARCH_PREFS.CUSTOM.LENGTH.MIN, SEARCH_PREFS.CUSTOM.LENGTH.MAX)) : generateRealisticWord(randomInt(SEARCH_PREFS.CUSTOM.LENGTH.MIN, SEARCH_PREFS.CUSTOM.LENGTH.MAX));
-    if (customWord) {
-      switch (SEARCH_PREFS.CUSTOM.INSERT) {
-        case "prefix":
-          randPart = customWord + randPart;
-          break;
-        case "suffix":
-          randPart = randPart + customWord;
-          break;
-        default:
-          randPart = insertWordRandomly(randPart, customWord);
-      }
-    }
-    finalUrl = `${SEARCH_PREFS.BASE}${randPart}${domain}`;
-  }
-  return finalUrl;
-}
-function generateRealisticWord(maxLength) {
-  const raw = n({
-    dictionaries: [l, t, r],
-    length: 1,
-    style: "lowerCase"
-  });
-  let word = raw.replace(/[^a-z0-9]/gi, "");
-  if (word.length > maxLength) return word.slice(0, maxLength);
-  if (word.length < SEARCH_PREFS.CUSTOM.LENGTH.MIN) return word.padEnd(SEARCH_PREFS.CUSTOM.LENGTH.MIN, "x");
-  return word;
-}
-function generatePhoneticWord(maxLength) {
-  const vowels = CHARACTERS.CHARACTER_TYPES.VOWELS;
-  const consonants = CHARACTERS.CHARACTER_TYPES.CONSONANTS;
-  const minLength = SEARCH_PREFS.CUSTOM.LENGTH.MIN;
-  if (Math.random() < SEARCH_PREFS.CUSTOM.COMBINATION_WEIGHT) {
-    return generateWithCombinations(maxLength, minLength);
-  }
-  return generateWithEnhancedPatterns(maxLength, minLength, vowels, consonants);
-}
-function generateWithCombinations(maxLength, minLength) {
-  let word = "";
-  const usedCombinations = /* @__PURE__ */ new Set();
-  while (word.length < maxLength && word.length < minLength + 4) {
-    const validCombos = COMBINATIONS.filter(
-      (combo) => combo.pattern.length <= maxLength - word.length && !usedCombinations.has(combo.pattern)
-    );
-    if (validCombos.length === 0) break;
-    const totalWeight = validCombos.reduce((sum, c) => sum + c.weight, 0);
-    let random = Math.random() * totalWeight;
-    for (const combo of validCombos) {
-      random -= combo.weight;
-      if (random <= 0) {
-        word += combo.pattern;
-        usedCombinations.add(combo.pattern);
-        break;
-      }
-    }
-  }
-  while (word.length < minLength) {
-    const vowels = CHARACTERS.CHARACTER_TYPES.VOWELS;
-    word += vowels[Math.floor(Math.random() * vowels.length)];
-  }
-  return word.slice(0, maxLength);
-}
-function generateWithEnhancedPatterns(maxLength, minLength, vowels, consonants) {
-  const validPatterns = PATTERNS.filter(
-    (p) => p.pattern.length >= minLength && p.pattern.length <= maxLength
-  );
-  if (validPatterns.length === 0) {
-    return generateFallbackPattern(maxLength, minLength, vowels, consonants);
-  }
-  const totalWeight = validPatterns.reduce((sum, p) => sum + p.weight, 0);
-  let random = Math.random() * totalWeight;
-  let selectedPattern = validPatterns[0].pattern;
-  for (const patternObj of validPatterns) {
-    random -= patternObj.weight;
-    if (random <= 0) {
-      selectedPattern = patternObj.pattern;
-      break;
-    }
-  }
-  return buildEnhancedWordFromPattern(selectedPattern, vowels, consonants);
-}
-function buildEnhancedWordFromPattern(pattern, vowels, consonants) {
-  let word = "";
-  for (let i2 = 0; i2 < pattern.length; i2++) {
-    const char = pattern[i2];
-    const nextChar = pattern[i2 + 1];
-    if (char === "c") {
-      if (nextChar && Math.random() < 0.2) {
-        const validCombos = COMBINATIONS.filter(
-          (combo) => combo.pattern.length === 2 && i2 + 1 < pattern.length && (char === "c" && nextChar === "c" || char === "c" && nextChar === "v")
-        );
-        if (validCombos.length > 0) {
-          const combo = validCombos[Math.floor(Math.random() * validCombos.length)];
-          word += combo.pattern;
-          i2++;
-          continue;
-        }
-      }
-      word += consonants[Math.floor(Math.random() * consonants.length)];
-    } else if (char === "v") {
-      if (nextChar === "v" && Math.random() < 0.15) {
-        const vowelCombos = COMBINATIONS.filter(
-          (combo) => combo.pattern.length === 2 && /^[aeiou]{2}$/.test(combo.pattern)
-        );
-        if (vowelCombos.length > 0) {
-          const combo = vowelCombos[Math.floor(Math.random() * vowelCombos.length)];
-          word += combo.pattern;
-          i2++;
-          continue;
-        }
-      }
-      word += vowels[Math.floor(Math.random() * vowels.length)];
-    }
-  }
-  return word;
-}
-function generateFallbackPattern(maxLength, minLength, vowels, consonants) {
-  let pattern = "";
-  let useConsonant = true;
-  for (let i2 = 0; i2 < Math.min(maxLength, Math.max(minLength, 4)); i2++) {
-    pattern += useConsonant ? "c" : "v";
-    useConsonant = !useConsonant;
-  }
-  return buildEnhancedWordFromPattern(pattern, vowels, consonants);
-}
-function insertWordRandomly(base, word) {
-  const pos = randomInt(0, base.length);
-  return base.slice(0, pos) + word + base.slice(pos);
 }
 function getRoot(url) {
   try {
@@ -7046,6 +8453,8 @@ async function checkUrl(url) {
       ValidResultEvents.emit(url);
     } else if (redirected) {
       redirectedResults.set(url, result);
+    } else {
+      invalidResults.set(url, result);
     }
     return result.valid;
   } catch (error) {
@@ -7056,6 +8465,13 @@ async function checkUrl(url) {
       reason: error?.message || "unknown error"
     };
     sessionResults.set(url, result);
+    invalidResults.set(url, result);
+    const errMsg = error?.message || "";
+    const isTimeout = errMsg.toLowerCase().includes("timeout") || error?.code === "ECONNABORTED";
+    if (isTimeout) {
+      timeoutQueue.add(url);
+      processTimeoutQueue();
+    }
     const fallbackSuccess = await fallback(error, url);
     if (fallbackSuccess) {
       const updatedResult = {
@@ -7067,9 +8483,21 @@ async function checkUrl(url) {
       sessionResults.set(url, updatedResult);
       validResults.set(url, updatedResult);
       ValidResultEvents.emit(url);
+      invalidResults.delete(url);
     }
     return fallbackSuccess;
   }
+}
+function cancelSearch() {
+  if (DEBUG.ENABLED) console.log("\u{1F6D1} Cancelling search process");
+  clearQueue();
+  state.isSearching = false;
+  setText("searchButton", "Search");
+}
+function clearQueue() {
+  if (DEBUG.ENABLED) console.log("Clearing timeout queue");
+  timeoutQueue.clear();
+  state.isProcessingTimeouts = false;
 }
 async function fallback(error, url) {
   const err = error;
@@ -7134,12 +8562,59 @@ async function retryWithLongerTimeout(url) {
     return false;
   }
 }
+async function processTimeoutQueue() {
+  if (state.isProcessingTimeouts) return;
+  state.isProcessingTimeouts = true;
+  const fallbackLimits = SEARCH_PREFS.LIMITS.FALLBACK;
+  if (DEBUG.ENABLED) console.log("\u{1F552} Starting background retry for timeouts");
+  while (timeoutQueue.size > 0) {
+    const url = [...timeoutQueue][0];
+    let success = false;
+    for (let attempt = 1; attempt <= fallbackLimits.RETRIES; attempt++) {
+      try {
+        const response = await axios_default.head(url, {
+          timeout: fallbackLimits.TIMEOUT,
+          maxRedirects: 2,
+          validateStatus: () => true
+        });
+        const valid = response.status < 400;
+        const redirected = getRoot(url) !== getRoot(response.request?.responseURL || url);
+        if (valid && !redirected) {
+          const result = {
+            url,
+            valid: true,
+            status: response.status,
+            checkedAt: Date.now(),
+            reason: "recovered via background retry"
+          };
+          sessionResults.set(url, result);
+          validResults.set(url, result);
+          ValidResultEvents.emit(url);
+          success = true;
+          break;
+        }
+      } catch {
+      }
+      await new Promise((r2) => setTimeout(r2, 50));
+    }
+    timeoutQueue.delete(url);
+    if (DEBUG.ENABLED) {
+      console.log(`\u{1F9EA} Retried: ${url} \u2192 ${success ? "\u2705 success" : "\u274C failed"}`);
+    }
+  }
+  if (DEBUG.ENABLED) console.log("\u2705 Timeout queue cleared.");
+  state.isProcessingTimeouts = false;
+}
 function getSelectedFilters() {
   const selected = [];
-  document.querySelectorAll(".toggler.active").forEach((el) => {
+  const container = document.getElementById("filters_container");
+  if (!container) return selected;
+  container.querySelectorAll(".toggler.active").forEach((el) => {
     const group = el.getAttribute("data-group");
     const key = el.getAttribute("data-key");
-    if (group && key) selected.push([group, key]);
+    if (group && key) {
+      selected.push([group, key]);
+    }
   });
   return selected;
 }
@@ -7153,6 +8628,11 @@ function getWordList(entry) {
   return [];
 }
 export {
+  cancelSearch,
+  clearQueue,
+  getSelectedFilters,
+  getWordList,
+  plugins,
   search,
   state
 };

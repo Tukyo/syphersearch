@@ -8,28 +8,82 @@
 */
 
 import axios, { AxiosError } from 'axios';
-import { uniqueNamesGenerator, adjectives, colors, animals } from 'unique-names-generator';
 
-import { CHARACTERS, COMBINATIONS, DEBUG, PATTERNS, RANDOM_MODE, SEARCH_PREFS } from './Config';
-import { ProgressEvents, ValidResultEvents } from './Events';
-import { initInterface, setText, toggleTab, ui } from './Interface';
-import { randomString, randomInt, logBatchResults } from './Utils';
-import { dict, Dictionary } from './dict/Dictionary';
-import { redirectedResults, sessionResults, validResults } from './Cache';
+import { DEBUG, SEARCH_PREFS } from './Config';
+import { InterfaceInitEvents, ProgressEvents, ValidResultEvents } from './Events';
+import { initInterface, setText, toggleTab, ui, updatePremium } from './Interface';
+import { logBatchResults, throttle, check } from './Utils';
+import { Dictionary } from './dict/Dictionary';
+import { invalidResults, redirectedResults, sessionResults, timeoutQueue, validResults } from './Cache';
 import { SessionResult } from './Defs';
+import { generateRandomURL } from './Generation';
 
 export const state = {
-  isSearching: false
+  isSearching: false,
+  isProcessingTimeouts: false,
+  isPremium: false
+};
+
+export const plugins = {
+  ethers: (window as any).ethers,
+  sypher: (window as any).sypher
 }
 
-// #region > Entrypoint <
+let c = {} as any;
+
+// #region > Initialization <
+InterfaceInitEvents.on(() => {
+  if (DEBUG.ENABLED) {
+    console.log("UI created:", ui);
+  }
+
+  plugins.sypher.init({
+    interface: {
+      button: {
+        type: "connect",
+        text: "Login",
+        modal: true,
+        append: ui.header
+      }
+    },
+    crypto: {
+      chain: "base",
+      contractAddress: "0x21b9D428EB20FA075A29d51813E57BAb85406620",
+      poolAddress: "0xB0fbaa5c7D28B33Ac18D9861D4909396c1B8029b",
+      pairAddress: "0x4200000000000000000000000000000000000006",
+      version: "V3",
+      icon: "https://github.com/Tukyo/sypherbot-public/blob/main/assets/img/botpic.png?raw=true"
+    }
+  });
+});
+
+window.addEventListener('sypher:initCrypto', function (event) {
+  (async () => {
+    c = (event as CustomEvent).detail;
+    let tb = c.user.tokenBalance;
+
+    if (DEBUG.ENABLED) {
+      console.log("Crypto:", c);
+    }
+
+    if (check(tb)) { state.isPremium = true;  updatePremium(); }
+  })();
+});
+
+initInterface();
+// #endregion ^ Initialization ^
+//
+// --ι══════════════ι--
+//
+// #region > Search <
 //
 // ━━━━┛ ▼ ┗━━━━
-initInterface();
 export async function search(): Promise<void> {
   if (state.isSearching) return;
   state.isSearching = true;
   setText("searchButton", "Cancel");
+
+  clearQueue();
 
   let attempts = 0;
   let progress = 0;
@@ -38,21 +92,13 @@ export async function search(): Promise<void> {
     console.log("Starting search with preferences:", SEARCH_PREFS);
   }
 
-  // 🟡 Start fake ticking
-  const progressTimer = setInterval(() => {
-    if (progress < 1) {
-      progress += 0.005; // smooth visual feel
-      ProgressEvents.emit(progress);
-    }
-  }, 500);
-
   try {
     const globalBatchSet = new Set<string>();
     const batchPromises = [];
 
     for (let i = 0; i < SEARCH_PREFS.LIMITS.RETRIES; i += SEARCH_PREFS.LIMITS.BATCH) {
       // Create delay for rolling batches (first batch starts immediately)
-      const batchDelay = i === 0 ? 0 : SEARCH_PREFS.LIMITS.BUFFER;
+      const batchDelay = i === 0 ? 0 : SEARCH_PREFS.LIMITS.BATCH_INTERVAL;
 
       const batchPromise = new Promise<void>(resolve => {
         setTimeout(async () => {
@@ -65,13 +111,22 @@ export async function search(): Promise<void> {
           const batch: { url: string; promise: Promise<boolean> }[] = [];
 
           while (batch.length < SEARCH_PREFS.LIMITS.BATCH) {
-            const domain = SEARCH_PREFS.DOMAINS[Math.floor(Math.random() * SEARCH_PREFS.DOMAINS.length)];
+            const enabledDomains = Object.entries(SEARCH_PREFS.DOMAINS)
+              .filter(([, isEnabled]) => isEnabled)
+              .map(([domain]) => domain);
+
+            if (enabledDomains.length === 0) {
+              throw new Error("No domains are enabled. Please select at least one.");
+            }
+
+            const domain = enabledDomains[Math.floor(Math.random() * enabledDomains.length)];
+
             const url = generateRandomURL(domain);
 
             if (!batchSet.has(url) && !sessionResults.has(url) && !globalBatchSet.has(url)) {
               batchSet.add(url);
               globalBatchSet.add(url);
-              batch.push({ url, promise: checkUrl(url) });
+              batch.push({ url, promise: throttle(() => checkUrl(url)) });
             }
           }
 
@@ -132,7 +187,6 @@ export async function search(): Promise<void> {
       console.warn("No working URLs found after maximum retries.");
     }
   } finally {
-    clearInterval(progressTimer);
     ProgressEvents.emit(1);
     state.isSearching = false;
     setText("searchButton", "Search");
@@ -140,281 +194,16 @@ export async function search(): Promise<void> {
 }
 // ━━━━┛ ▲ ┗━━━━
 //
-// #endregion ^ Entrypoint ^
-//
-// --ι══════════════ι--
-//
-// #region > Optional Word Handling <
-//
-// ━━━━┛ ▼ ┗━━━━
-let customWord: string | null = null;
-function getCustomWord(): string | null {
-  const input = ui.customInput as HTMLInputElement;
-  const word = input?.value.trim();
-
-  if (DEBUG.ENABLED && word) {
-    console.log(`Getting custom word: ${word}`);
-  }
-
-  customWord = word || null;
-  return word ? word.toLowerCase() : null;
-}
-// ━━━━┛ ▲ ┗━━━━
-//
-// #endregion ^ Optional Word Handling ^
-//
-// --ι══════════════ι--
-//
-// #region > Generation <
-//
-// ━━━━┛ ▼ ┗━━━━
-function generateRandomURL(domain: string): string {
-  const selected = getSelectedFilters();
-  const length = randomInt(SEARCH_PREFS.CUSTOM.LENGTH.MIN, SEARCH_PREFS.CUSTOM.LENGTH.MAX);
-
-  let randPart = "";
-
-  if (selected.length === 0) {
-    // fallback
-    switch (SEARCH_PREFS.CUSTOM.RANDOM) {
-      case RANDOM_MODE.RAW:
-        randPart = randomString(SEARCH_PREFS.CUSTOM.CHARACTERS, length);
-        break;
-      case RANDOM_MODE.PHONETIC:
-        randPart = generatePhoneticWord(length);
-        break;
-      case RANDOM_MODE.DICTIONARY:
-        randPart = generateRealisticWord(length);
-        break;
-    }
-  } else {
-    // build from selected filters
-    const parts: string[] = [];
-    for (const [group, key] of selected) {
-      const entry = dict[group][key];
-      const wordList = getWordList(entry);
-
-      if (wordList.length > 0) {
-        const word = wordList[Math.floor(Math.random() * wordList.length)];
-        parts.push(word.toLowerCase());
-
-        if (DEBUG.ENABLED && !DEBUG.QUIET) {
-          console.log(`[${group}.${key}] → Sample: "${word}" (${wordList.length} words)`);
-        }
-      } else if (DEBUG.ENABLED) {
-        console.warn(`[${group}.${key}] → No usable word list.`);
-      }
-    }
-    randPart = parts.join("");
-    if (randPart.length > length) randPart = randPart.slice(0, length);
-  }
-
-  // insert custom word if applicable
-  if (!customWord) customWord = getCustomWord();
-  if (customWord) {
-    switch (SEARCH_PREFS.CUSTOM.INSERT) {
-      case "prefix":
-        randPart = customWord + randPart;
-        break;
-      case "suffix":
-        randPart = randPart + customWord;
-        break;
-      default:
-        randPart = insertWordRandomly(randPart, customWord);
-    }
-
-    // if (DEBUG.ENABLED) {
-    //   console.log(`Inserted optional word: ${customWord} into ${randPart}`);
-    // }
-  }
-
-  let finalUrl = `${SEARCH_PREFS.BASE}${randPart}${domain}`;
-
-  // 🔁 Ensure this URL hasn't been searched before in session
-  let maxRetries = 5;
-  while (sessionResults.has(finalUrl) && maxRetries-- > 0) {
-    randPart = SEARCH_PREFS.CUSTOM.RANDOM
-      ? randomString(SEARCH_PREFS.CUSTOM.CHARACTERS, randomInt(SEARCH_PREFS.CUSTOM.LENGTH.MIN, SEARCH_PREFS.CUSTOM.LENGTH.MAX))
-      : generateRealisticWord(randomInt(SEARCH_PREFS.CUSTOM.LENGTH.MIN, SEARCH_PREFS.CUSTOM.LENGTH.MAX));
-
-    if (customWord) {
-      switch (SEARCH_PREFS.CUSTOM.INSERT) {
-        case "prefix":
-          randPart = customWord + randPart;
-          break;
-        case "suffix":
-          randPart = randPart + customWord;
-          break;
-        default:
-          randPart = insertWordRandomly(randPart, customWord);
-      }
-    }
-
-    finalUrl = `${SEARCH_PREFS.BASE}${randPart}${domain}`;
-  }
-
-  return finalUrl;
-}
-function generateRealisticWord(maxLength: number): string {
-  const raw = uniqueNamesGenerator({
-    dictionaries: [adjectives, colors, animals],
-    length: 1,
-    style: 'lowerCase'
-  });
-
-  let word = raw.replace(/[^a-z0-9]/gi, '');
-  if (word.length > maxLength) return word.slice(0, maxLength);
-  if (word.length < SEARCH_PREFS.CUSTOM.LENGTH.MIN) return word.padEnd(SEARCH_PREFS.CUSTOM.LENGTH.MIN, 'x');
-  return word;
-}
-function generatePhoneticWord(maxLength: number): string {
-  const vowels = CHARACTERS.CHARACTER_TYPES.VOWELS;
-  const consonants = CHARACTERS.CHARACTER_TYPES.CONSONANTS;
-  const minLength = SEARCH_PREFS.CUSTOM.LENGTH.MIN;
-
-  // 30% chance to use combination-based generation
-  if (Math.random() < SEARCH_PREFS.CUSTOM.COMBINATION_WEIGHT) {
-    return generateWithCombinations(maxLength, minLength);
-  }
-
-  // 70% chance to use pattern-based generation with combination enhancements
-  return generateWithEnhancedPatterns(maxLength, minLength, vowels, consonants);
-}
-function generateWithCombinations(maxLength: number, minLength: number): string {
-  let word = "";
-  const usedCombinations = new Set<string>();
-
-  while (word.length < maxLength && word.length < minLength + 4) {
-    // Get valid combinations that fit
-    const validCombos = COMBINATIONS.filter(combo =>
-      combo.pattern.length <= (maxLength - word.length) &&
-      !usedCombinations.has(combo.pattern)
-    );
-
-    if (validCombos.length === 0) break;
-
-    // Weighted selection
-    const totalWeight = validCombos.reduce((sum, c) => sum + c.weight, 0);
-    let random = Math.random() * totalWeight;
-
-    for (const combo of validCombos) {
-      random -= combo.weight;
-      if (random <= 0) {
-        word += combo.pattern;
-        usedCombinations.add(combo.pattern);
-        break;
-      }
-    }
-  }
-
-  // Ensure minimum length
-  while (word.length < minLength) {
-    const vowels = CHARACTERS.CHARACTER_TYPES.VOWELS;
-    word += vowels[Math.floor(Math.random() * vowels.length)];
-  }
-
-  return word.slice(0, maxLength);
-}
-
-function generateWithEnhancedPatterns(maxLength: number, minLength: number, vowels: string, consonants: string): string {
-  // Filter valid patterns
-  const validPatterns = PATTERNS.filter(p =>
-    p.pattern.length >= minLength && p.pattern.length <= maxLength
-  );
-
-  if (validPatterns.length === 0) {
-    return generateFallbackPattern(maxLength, minLength, vowels, consonants);
-  }
-
-  // Select pattern using weights
-  const totalWeight = validPatterns.reduce((sum, p) => sum + p.weight, 0);
-  let random = Math.random() * totalWeight;
-
-  let selectedPattern = validPatterns[0].pattern;
-  for (const patternObj of validPatterns) {
-    random -= patternObj.weight;
-    if (random <= 0) {
-      selectedPattern = patternObj.pattern;
-      break;
-    }
-  }
-
-  return buildEnhancedWordFromPattern(selectedPattern, vowels, consonants);
-}
-
-function buildEnhancedWordFromPattern(pattern: string, vowels: string, consonants: string): string {
-  let word = "";
-
-  for (let i = 0; i < pattern.length; i++) {
-    const char = pattern[i];
-    const nextChar = pattern[i + 1];
-
-    if (char === 'c') {
-      // 20% chance to use a common combination if it fits the pattern
-      if (nextChar && Math.random() < 0.2) {
-        const validCombos = COMBINATIONS.filter(combo =>
-          combo.pattern.length === 2 &&
-          i + 1 < pattern.length &&
-          ((char === 'c' && nextChar === 'c') ||
-            (char === 'c' && nextChar === 'v'))
-        );
-
-        if (validCombos.length > 0) {
-          const combo = validCombos[Math.floor(Math.random() * validCombos.length)];
-          word += combo.pattern;
-          i++; // Skip next character since we used a 2-char combination
-          continue;
-        }
-      }
-
-      word += consonants[Math.floor(Math.random() * consonants.length)];
-    } else if (char === 'v') {
-      // 15% chance to use vowel combinations
-      if (nextChar === 'v' && Math.random() < 0.15) {
-        const vowelCombos = COMBINATIONS.filter(combo =>
-          combo.pattern.length === 2 &&
-          /^[aeiou]{2}$/.test(combo.pattern)
-        );
-
-        if (vowelCombos.length > 0) {
-          const combo = vowelCombos[Math.floor(Math.random() * vowelCombos.length)];
-          word += combo.pattern;
-          i++; // Skip next character
-          continue;
-        }
-      }
-
-      word += vowels[Math.floor(Math.random() * vowels.length)];
-    }
-  }
-
-  return word;
-}
-
-function generateFallbackPattern(maxLength: number, minLength: number, vowels: string, consonants: string): string {
-  let pattern = "";
-  let useConsonant = true;
-
-  for (let i = 0; i < Math.min(maxLength, Math.max(minLength, 4)); i++) {
-    pattern += useConsonant ? "c" : "v";
-    useConsonant = !useConsonant;
-  }
-
-  return buildEnhancedWordFromPattern(pattern, vowels, consonants);
-}
-function insertWordRandomly(base: string, word: string): string {
-  const pos = randomInt(0, base.length);
-  return base.slice(0, pos) + word + base.slice(pos);
-}
-// ━━━━┛ ▲ ┗━━━━
-//
-// #endregion ^ Generation ^
+// #endregion ^ Search ^
 //
 // --ι══════════════ι--
 //
 // #region > URL Processing <
 //
 // ━━━━┛ ▼ ┗━━━━
+/**
+ * Extracts the root domain from a URL.
+ */
 function getRoot(url: string): string {
   try {
     const parsed = new URL(url);
@@ -423,9 +212,9 @@ function getRoot(url: string): string {
     return '';
   }
 }
-
 async function checkUrl(url: string): Promise<boolean> {
-  // 🧠 Check runtime cache
+  // Check runtime cache
+  // 
   if (sessionResults.has(url)) {
     if (DEBUG.ENABLED) {
       console.log(`🔁 Using cached result for ${url}`);
@@ -459,6 +248,8 @@ async function checkUrl(url: string): Promise<boolean> {
       ValidResultEvents.emit(url);
     } else if (redirected) {
       redirectedResults.set(url, result);
+    } else {
+      invalidResults.set(url, result);
     }
 
     return result.valid;
@@ -471,6 +262,15 @@ async function checkUrl(url: string): Promise<boolean> {
     };
 
     sessionResults.set(url, result);
+    invalidResults.set(url, result);
+
+    const errMsg = (error as AxiosError)?.message || "";
+    const isTimeout = errMsg.toLowerCase().includes("timeout") || (error as AxiosError)?.code === "ECONNABORTED";
+
+    if (isTimeout) {
+      timeoutQueue.add(url);
+      processTimeoutQueue();
+    }
 
     const fallbackSuccess = await fallback(error, url);
 
@@ -486,10 +286,24 @@ async function checkUrl(url: string): Promise<boolean> {
       sessionResults.set(url, updatedResult);
       validResults.set(url, updatedResult);
       ValidResultEvents.emit(url);
+      invalidResults.delete(url);
     }
 
     return fallbackSuccess;
   }
+}
+export function cancelSearch(): void {
+  if (DEBUG.ENABLED) console.log("🛑 Cancelling search process");
+
+  clearQueue();
+  state.isSearching = false;
+  setText("searchButton", "Search");
+}
+export function clearQueue(): void {
+  if (DEBUG.ENABLED) console.log("Clearing timeout queue");
+
+  timeoutQueue.clear();
+  state.isProcessingTimeouts = false;
 }
 // ━━━━┛ ▲ ┗━━━━
 //
@@ -580,6 +394,61 @@ async function retryWithLongerTimeout(url: string): Promise<boolean> {
     return false;
   }
 }
+async function processTimeoutQueue(): Promise<void> {
+  if (state.isProcessingTimeouts) return;
+  state.isProcessingTimeouts = true;
+
+  const fallbackLimits = SEARCH_PREFS.LIMITS.FALLBACK;
+
+  if (DEBUG.ENABLED) console.log("🕒 Starting background retry for timeouts");
+
+  while (timeoutQueue.size > 0) {
+    const url = [...timeoutQueue][0]; // get one (any order is fine)
+    let success = false;
+
+    for (let attempt = 1; attempt <= fallbackLimits.RETRIES; attempt++) {
+      try {
+        const response = await axios.head(url, {
+          timeout: fallbackLimits.TIMEOUT,
+          maxRedirects: 2,
+          validateStatus: () => true
+        });
+
+        const valid = response.status < 400;
+        const redirected = getRoot(url) !== getRoot(response.request?.responseURL || url);
+
+        if (valid && !redirected) {
+          const result: SessionResult = {
+            url,
+            valid: true,
+            status: response.status,
+            checkedAt: Date.now(),
+            reason: "recovered via background retry"
+          };
+
+          sessionResults.set(url, result);
+          validResults.set(url, result);
+          ValidResultEvents.emit(url);
+          success = true;
+          break;
+        }
+      } catch {
+        // Silent fail, just retry
+      }
+
+      await new Promise(r => setTimeout(r, 50)); // short delay between retries
+    }
+
+    timeoutQueue.delete(url);
+
+    if (DEBUG.ENABLED) {
+      console.log(`🧪 Retried: ${url} → ${success ? "✅ success" : "❌ failed"}`);
+    }
+  }
+
+  if (DEBUG.ENABLED) console.log("✅ Timeout queue cleared.");
+  state.isProcessingTimeouts = false;
+}
 // ━━━━┛ ▲ ┗━━━━
 //
 // #endregion ^ Fallbacks ^
@@ -587,18 +456,24 @@ async function retryWithLongerTimeout(url: string): Promise<boolean> {
 // --ι══════════════ι--
 //
 // #region > Filters <
-function getSelectedFilters(): [keyof Dictionary, keyof Dictionary[keyof Dictionary]][] {
+export function getSelectedFilters(): [keyof Dictionary, keyof Dictionary[keyof Dictionary]][] {
   const selected: [keyof Dictionary, keyof Dictionary[keyof Dictionary]][] = [];
 
-  document.querySelectorAll(".toggler.active").forEach(el => {
+  const container = document.getElementById("filters_container"); // or use ui.filters if cleaner
+  if (!container) return selected;
+
+  container.querySelectorAll(".toggler.active").forEach(el => {
     const group = el.getAttribute("data-group") as keyof Dictionary;
     const key = el.getAttribute("data-key") as keyof Dictionary[keyof Dictionary];
-    if (group && key) selected.push([group, key]);
+
+    if (group && key) {
+      selected.push([group, key]);
+    }
   });
 
   return selected;
 }
-function getWordList(entry: any): string[] {
+export function getWordList(entry: any): string[] {
   if (Array.isArray(entry)) return entry;
 
   if (typeof entry === 'object' && entry !== null) {

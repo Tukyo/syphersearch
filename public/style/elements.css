@@ -8,15 +8,12 @@
 html,
 body {
     max-width: 90%;
-    padding: 50px;
-    gap: 40px;
-    margin: auto;
+    padding: 30px;
+    margin: 0px auto;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     background-attachment: fixed;
-    min-height: 90vh;
-    max-height: 100vh;
     font-size: clamp(14px, 1.25vw, 24px);
 }
 
@@ -24,7 +21,10 @@ main {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 80vh;
+}
+
+div {
+    user-select: none;
 }
 
 /* #endregion Core */
@@ -39,7 +39,6 @@ button {
     border: 2px solid var(--primary-color);
     cursor: pointer;
     border-radius: var(--border-radius);
-    width: 100%;
     box-sizing: border-box;
     transition: all 0.2s ease-in-out;
 }
@@ -64,6 +63,18 @@ footer {
 
 h3 {
     color: var(--font-color-accent);
+    pointer-events: none;
+    user-select: none;
 }
-
+h2 {
+    color: var(--font-color-accent);
+    font-size: 1em;
+    font-weight: var(--font-weight-bold);
+    margin: 0;
+}
+p {
+    color: var(--font-color-alt);
+    font-size: 0.9em;
+    margin: 0;
+}
 /* #endregion Header and Footer */

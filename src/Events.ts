@@ -53,4 +53,26 @@ class ValidResultEventEmitter {
 export const ValidResultEvents = new ValidResultEventEmitter();
 // ━━━━┛ ▲ ┗━━━━
 //
+// ━━━━┛ ▼ ┗━━━━
+type InterfaceInitCallback = () => void;
+
+class InterfaceInitEventEmitter {
+  private listeners: Set<InterfaceInitCallback> = new Set();
+
+  on(cb: InterfaceInitCallback) {
+    this.listeners.add(cb);
+  }
+
+  off(cb: InterfaceInitCallback) {
+    this.listeners.delete(cb);
+  }
+
+  emit() {
+    for (const cb of this.listeners) cb();
+  }
+}
+
+export const InterfaceInitEvents = new InterfaceInitEventEmitter();
+// ━━━━┛ ▲ ┗━━━━
+//
 // #endregion ^ Events ^

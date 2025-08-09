@@ -13,7 +13,7 @@
 
     --border-radius: 8px;
 
-    --font-color: hsl(0, 0%, 95%);
+    --font-color: hsl(0, 0%, 90%);
     --font-color-alt: hsl(0, 0%, 60%);
     --font-color-accent: hsl(0, 0%, 30%);
     --font-family: "Noto Sans JP", sans-serif;
@@ -38,6 +38,23 @@
     background: var(--transparent);
 }
 /* #endregion Scrollbar */
+/*
+*
+*/
+/*
+*
+*/
+/* #region Input */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+/* #endregion Input */
 /*
 *
 */

@@ -56,15 +56,18 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 10px;
+    padding: .65rem;
     overflow: hidden;
 }
+
 .container.hidden {
     display: none;
 }
+
 .container.active {
-  display: flex;
+    display: flex;
 }
+
 /* #endregion Container */
 /*
 *
@@ -85,7 +88,8 @@
 *
 */
 /* #region Toggles */
-.toggler {
+.toggler,
+.result {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -98,12 +102,14 @@
     font-size: 0.75rem;
 }
 
-.toggler:hover {
+.toggler:hover,
+.result:hover {
     scale: 1.1;
     transition: scale 0.1s ease-in-out;
 }
 
-.toggler.active {
+.toggler.active,
+.result:hover {
     background-color: var(--background-color);
     box-shadow: inset 0 0 10px 20px var(--slate-20);
 }
@@ -154,27 +160,194 @@
 *
 */
 /* #region Tabs */
-.tab {
+.tab,
+.subtab {
     display: flex;
     align-items: center;
     justify-content: center;
     flex: 1;
-    width: 100%;
     padding: 0.25rem;
     background: var(--slate-dark-10);
     backdrop-filter: blur(2px);
     --webkit-backdrop-filter: blur(2px);
 }
-.tab:hover {
+
+.tab:hover, .subtab:hover {
     cursor: pointer;
 }
-.tab:hover h3 {
+
+.tab:hover h3, .subtab:hover h3 {
     color: var(--font-color-alt);
 }
-.tab h3 {
+
+.tab h3, .subtab h3 {
     margin: 0;
 }
-.tab.active {
+
+.tab.active, .subtab.active {
     background: var(--background-color);
 }
+
 /* #endregion Tabs */
+/*
+*
+*/
+/* #region Help */
+.help {
+    
+}
+/* #endregion Help */
+/*
+*
+*/
+/* #region Results */
+.result a {
+    text-decoration: none;
+    color: var(--font-color-alt);
+    font-weight: var(--font-weight-regular);
+}
+
+.result:hover a {
+    color: var(--font-color);
+}
+
+/* #endregion Results */
+/*
+*
+*/
+/* #region Premium */
+@keyframes containerChromaWarp {
+  /* Normal state */
+  0%, 5%, 9%, 14%, 18%, 22%, 27%, 33%, 39%, 46%, 52%, 59%, 64%, 70%, 78%, 84%, 91%, 97%, 100% {
+    box-shadow: none;
+  }
+
+  /* Burst 1 */
+  6% {
+    box-shadow: 
+      0.35rem -0.05rem rgba(255,0,255,1),
+     -0.25rem -0.35rem rgba(0,255,255,1),
+      0.1rem   0.25rem rgba(255,255,0,1);
+  }
+  6.15% {
+    box-shadow: 
+      0.15rem -0.15rem rgba(255,0,255,0.9),
+     -0.35rem -0.1rem rgba(0,255,255,0.9),
+      0.2rem   0.15rem rgba(255,255,0,0.9);
+  }
+
+  /* Burst 2 */
+  15% {
+    box-shadow: 
+      0.45rem -0.1rem rgba(255,0,255,1),
+     -0.3rem -0.4rem rgba(0,255,255,1),
+      0.2rem   0.3rem rgba(255,255,0,1);
+  }
+  15.15% {
+    box-shadow: 
+      0.1rem -0.05rem rgba(255,0,255,0.85),
+     -0.25rem -0.15rem rgba(0,255,255,0.85),
+      0.15rem  0.1rem rgba(255,255,0,0.85);
+  }
+
+  /* Burst 3 */
+  23% {
+    box-shadow: 
+      0.2rem -0.2rem rgba(255,0,255,1),
+     -0.4rem -0.05rem rgba(0,255,255,1),
+      0.3rem  0.15rem rgba(255,255,0,1);
+  }
+  23.15% {
+    box-shadow: 
+      0.3rem 0.1rem rgba(255,0,255,0.95),
+     -0.15rem -0.35rem rgba(0,255,255,0.95),
+      0.1rem  0.25rem rgba(255,255,0,0.95);
+  }
+
+  /* Burst 4 */
+  40% {
+    box-shadow: 
+      0.5rem -0.05rem rgba(255,0,255,1),
+     -0.2rem -0.4rem rgba(0,255,255,1),
+      0.25rem 0.35rem rgba(255,255,0,1);
+  }
+  40.15% {
+    box-shadow: 
+      0.25rem -0.15rem rgba(255,0,255,0.9),
+     -0.3rem  -0.15rem rgba(0,255,255,0.9),
+      0.15rem  0.15rem rgba(255,255,0,0.9);
+  }
+}
+
+.category.premium_false {
+  opacity: 0.3;
+  pointer-events: none;
+  filter: blur(2px);
+  animation: containerChromaWarp 30s infinite;
+}
+
+@keyframes chromaWarp {
+  /* Normal */
+  0%, 5%, 9%, 14%, 18%, 22%, 27%, 33%, 39%, 46%, 52%, 59%, 64%, 70%, 78%, 84%, 91%, 97%, 100% {
+    text-shadow: none;
+  }
+
+  /* Burst 1 */
+  6% {
+    text-shadow: 0.35rem -0.05rem rgba(255,0,255,1),
+                -0.25rem -0.35rem rgba(0,255,255,1),
+                 0.1rem 0.25rem rgba(255,255,0,1);
+  }
+  6.15% {
+    text-shadow: 0.15rem -0.15rem rgba(255,0,255,0.9),
+                -0.35rem -0.1rem rgba(0,255,255,0.9),
+                 0.2rem 0.15rem rgba(255,255,0,0.9);
+  }
+
+  /* Burst 2 */
+  15% {
+    text-shadow: 0.45rem -0.1rem rgba(255,0,255,1),
+                -0.3rem -0.4rem rgba(0,255,255,1),
+                 0.2rem 0.3rem rgba(255,255,0,1);
+  }
+  15.15% {
+    text-shadow: 0.1rem -0.05rem rgba(255,0,255,0.85),
+                -0.25rem -0.15rem rgba(0,255,255,0.85),
+                 0.15rem 0.1rem rgba(255,255,0,0.85);
+  }
+
+  /* Burst 3 */
+  23% {
+    text-shadow: 0.2rem -0.2rem rgba(255,0,255,1),
+                -0.4rem -0.05rem rgba(0,255,255,1),
+                 0.3rem 0.15rem rgba(255,255,0,1);
+  }
+  23.15% {
+    text-shadow: 0.3rem 0.1rem rgba(255,0,255,0.95),
+                -0.15rem -0.35rem rgba(0,255,255,0.95),
+                 0.1rem 0.25rem rgba(255,255,0,0.95);
+  }
+
+  /* Burst 4 */
+  40% {
+    text-shadow: 0.5rem -0.05rem rgba(255,0,255,1),
+                -0.2rem -0.4rem rgba(0,255,255,1),
+                 0.25rem 0.35rem rgba(255,255,0,1);
+  }
+  40.15% {
+    text-shadow: 0.25rem -0.15rem rgba(255,0,255,0.9),
+                -0.3rem -0.15rem rgba(0,255,255,0.9),
+                 0.15rem 0.15rem rgba(255,255,0,0.9);
+  }
+
+  /* Add more bursts the same way at 65%, 79%, 92% with their own offsets */
+}
+
+.SyrchPro {
+  animation: chromaWarp 30s infinite;
+}
+
+
+
+
+/* #endregion Premium */

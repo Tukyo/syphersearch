@@ -1,0 +1,124 @@
+/* #region Logs */
+[class^="log-"] {
+    opacity: 0%;
+    scale: 0%;
+    transform: translateX(-400px);
+    font-family: monospace;
+    font-size: large;
+    animation: showLog 0.25s ease-in-out forwards;
+}
+#log-modal {
+    position: fixed;
+    display: flex;
+    gap: 10px;
+    top: 0;
+    left: 0;
+    height: 100%;
+    z-index: 10;
+}
+#log-mc {
+    top: 0;
+    left: 0;
+    color: var(--sypher-color-primary);
+    overflow-y: auto;
+    height: 100vh;
+    padding: 10px 10px;
+    background: var(--sypher-color-secondary);
+    overflow-x: hidden;
+    z-index: 11;
+}
+#log-mt i {
+    color: var(--sypher-color-quinary);
+    font-size: 3rem;
+    pointer-events: all !important;
+}
+#log-mt:hover i {
+    color: var(--sypher-color-primary);
+    cursor: pointer;
+}
+.lm-show {
+    pointer-events: all;
+}
+.lm-hide {
+    pointer-events: none;
+}
+.lc-hide {
+    width: 0px;
+    filter: blur(5px);
+}
+.lc-show {
+    width: 400px;
+    filter: blur(0px);
+}
+.log-item {
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid var(--sypher-color-quinary);
+    border-radius: var(--sypher-border-radius);
+    background: var(--sypher-color-tertiary);
+    overflow-x: auto;
+}
+.log-item>.log-string:first-child {
+    font-weight: bold;
+    color: var(--log-color-title);
+    margin-bottom: 5px;
+}
+.log-object {
+    background: var(--sypher-color-quaternary);
+    color: var(--sypher-color-primary);
+    border: 1px solid var(--sypher-color-quinary);
+    margin: 5px 0;
+    padding: 10px;
+    border-radius: var(--sypher-border-radius);
+}
+.log-address {
+    color: var(--log-color-address);
+    font-weight: bold;
+}
+.log-timestamp {
+    color: var(--log-color-timestamp);
+    font-weight: bold;
+}
+.log-string { color: var(--log-color-string); }
+.log-number { color: var(--log-color-number); }
+.log-key { color: var(--log-color-key); }
+.log-bool-true { color: var(--log-color-bool-true); }
+.log-bool-false { color: var(--log-color-bool-false); }
+.log-null {
+    color: var(--log-color-null);
+    font-style: italic;
+}
+.log-unknown { color: var(--log-color-unknown); }
+.log-error {
+    background: var(--log-color-error);
+    font-weight: bold;
+}
+.error-object {
+    background: var(--sypher-color-tertiary);
+}
+pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+pre span { font-size: medium !important; }
+@keyframes showLog {
+    0% {
+        opacity: 0;
+        scale: 0%;
+        transform: translateX(-400px);
+    }
+
+    50% {
+        opacity: 50%;
+        scale: 100%;
+        transform: translateX(-100px);
+    }
+
+    100% {
+        opacity: 100%;
+        scale: 100%;
+        transform: translateX(0);
+    }
+}
+/* #endregion Logs */

@@ -1,0 +1,22 @@
+:root {
+    --sypher-border-radius: 10px;
+
+    --sypher-color-primary: #000000;
+    --sypher-color-secondary: #f0f0f0;
+    --sypher-color-tertiary: #e0e0e0;
+    --sypher-color-quaternary: #d0d0d0;
+    --sypher-color-quinary: #c0c0c0;
+    --sypher-color-emphasis: #961098;
+
+    --log-color-title: #0311c7;
+    --log-color-address: #9a1eed;
+    --log-color-string: #3f321f;
+    --log-color-number: #449fff;
+    --log-color-key: #008f7b;
+    --log-color-bool-true: #2ec104;
+    --log-color-bool-false: #bf0a1b;
+    --log-color-null: #474747;
+    --log-color-unknown: #5e0c0c;
+    --log-color-error: #b61e1e;
+    --log-color-timestamp: #a79d9d;
+}
