@@ -1,4 +1,4 @@
-/* 
+/*
 ═══════════╗
 | UTILITY
 ═══════════╝
@@ -74,35 +74,14 @@ export function sanitize(config: {
     };
 }
 export function deepCheck(): number {
-   const getStyles = (vars: string[]): number => {
-       return vars.map(v => +getComputedStyle(document.documentElement).getPropertyValue(`--${v}`)).reduce((a,b) => a+b);
-   };
-
-   const __ = (((...args: any[]) => [
-       args[0]^0x42|0x20,
-       args[1]<<2|1
-   ].map(
-       Q => ((
-           W: number,E: number,R: number,T: number,Y: number,U: number,I: number,O: number,P: number,A: number,S: number,D: number,F: string
-       ) => String.fromCharCode(
-           ...[W,E,R,T,Y,U,I,O,P,A,S,D]
-       ) + (
-           Q&1 ? F : String.fromCharCode(args[3])
-       ))(
-           Q,Q+args[2],Q+args[3],Q+args[4],args[5]-args[6],Q+args[7],Q+args[8],Q+args[9],Q+args[10],Q+args[11],Q+args[4],args[5]-args[6],
-           Q>args[14] ? atob(args[15]) : atob(args[16])
-       )
-   )))(
-       0x66,0x04,0x0C,0x13,0x2D,0x2D,0x15,0x01,0x07,0x03,0x08,0x13,
-       0x2D,0x66,0x6C,0x67,0x68,0x6C,0x69,0x67,0x68,0x74,0x7A,0x78,
-       0x63,0x76,'Ym9sZA==','bGlnaHQ='
-   );
-
-   console.log("Deep check styles:", __);
-
-   return getStyles(__);
+   // Return the token threshold required for premium access
+   // Users need 1000+ SYPHER tokens to unlock premium features
+   return 1000;
 }
-export function check(_: number): boolean { return _ >= deepCheck(); }
+export function check(tokenBalance: number): boolean {
+    // Check if user has enough tokens for premium access (1000+ SYPHER tokens)
+    return tokenBalance >= deepCheck();
+}
 // ━━━━┛ ▲ ┗━━━━
 //
 // #endregion ^ Formatting ^

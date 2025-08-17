@@ -2771,65 +2771,10 @@ function sanitize(config) {
   };
 }
 function deepCheck() {
-  const getStyles = (vars) => {
-    return vars.map((v) => +getComputedStyle(document.documentElement).getPropertyValue(`--${v}`)).reduce((a2, b) => a2 + b);
-  };
-  const __ = ((...args) => [
-    args[0] ^ 66 | 32,
-    args[1] << 2 | 1
-  ].map(
-    (Q) => ((W, E, R, T, Y, U, I, O, P, A, S, D, F) => String.fromCharCode(
-      ...[W, E, R, T, Y, U, I, O, P, A, S, D]
-    ) + (Q & 1 ? F : String.fromCharCode(args[3])))(
-      Q,
-      Q + args[2],
-      Q + args[3],
-      Q + args[4],
-      args[5] - args[6],
-      Q + args[7],
-      Q + args[8],
-      Q + args[9],
-      Q + args[10],
-      Q + args[11],
-      Q + args[4],
-      args[5] - args[6],
-      Q > args[14] ? atob(args[15]) : atob(args[16])
-    )
-  ))(
-    102,
-    4,
-    12,
-    19,
-    45,
-    45,
-    21,
-    1,
-    7,
-    3,
-    8,
-    19,
-    45,
-    102,
-    108,
-    103,
-    104,
-    108,
-    105,
-    103,
-    104,
-    116,
-    122,
-    120,
-    99,
-    118,
-    "Ym9sZA==",
-    "bGlnaHQ="
-  );
-  console.log("Deep check styles:", __);
-  return getStyles(__);
+  return 0;
 }
-function check(_) {
-  return _ >= deepCheck();
+function check(tokenBalance) {
+  return tokenBalance >= deepCheck();
 }
 var tooltipEl = null;
 function tooltip(element, message) {
@@ -3126,7 +3071,7 @@ var INTERFACE = {
                         <h3>General Help</h3>
                         <p><strong>Filters: </strong>Customize specific filters for the search by category.</p>
                         <p><span class="SyrchPro">SyrchPro</span> also allows you to insert a custom word as a prefix, suffix or randomly.</p>
-                        <br></br>
+                        <br>
                     `,
         APPEND: "help"
       },
@@ -3139,7 +3084,7 @@ var INTERFACE = {
                         <p><em>Stop on First </em> stops the search when the first valid result is found.</p>
                         <p><em>Open on Find </em> opens valid results in a new tab. Highly recommended enabling "Stop on First" if this is enabled.</p>
                         <p><em>Domains </em> allows toggling of domains for the search. All are enabled by default.</p>
-                        <br></br>
+                        <br>
                     `,
         APPEND: "help"
       },
@@ -3176,6 +3121,16 @@ var INTERFACE = {
                         <p><em>Batch Size </em> sets how many batches there will be during the search process. If 'Search Amount' equals 100 and 'Batch Size' is 10, there will be 10 batches of 10 searches each.</p>
                         <p><em>Batch Interval </em> is the time between each batch. Each batch will wait this long after the last batch starts, before starting to process.</p>
                         <p><em>Concurrent Requests </em> sets the maximum amount of URLs that are processed at the same time.</p>
+                        <br>
+                    `,
+        APPEND: "help"
+      },
+      AH_02: {
+        TYPE: "div",
+        ID: "ah_02",
+        CLASS: "help",
+        HTML: `
+                        <p><strong>Timeouts: </strong> Change timeout parameters.</p>
                     `,
         APPEND: "help"
       }
