@@ -7,10 +7,32 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 */
 
+// #region > App <
+export const USER = {
+    address: null,
+    ens: null,
+    ethBalance: null,
+    tokenBalance: null,
+    value: null
+}
+export const STATE = {
+  SEARCHING: false,
+  PROCESSING_TIMEOUTS: false,
+  PREMIUM: false
+};
+export const PLUGINS = {
+  ethers: (window as any).ethers,
+  sypher: (window as any).sypher,
+  particles: (window as any).pJSDom
+}
+// #endregion ^ App ^
+//
+// --ι══════════════ι--
+//
 // #region > Debug < 
 // ━━━━┛ ▼ ┗━━━━
 export const DEBUG = {
-    ENABLED: false,
+    ENABLED: true,
     QUIET: true
 }
 // ━━━━┛ ▲ ┗━━━━
@@ -41,19 +63,19 @@ export const SEARCH_PREFS = {
     BASE: "https://www.",
     DOMAINS: {
         ".com": true,
-        ".net": true,
-        ".org": true,
-        ".gov": true,
-        ".edu": true,
-        ".io": true,
-        ".xyz": true,
-        ".info": true,
-        ".biz": true,
-        ".co": true,
-        ".gay": true,
-        ".jp": true,
-        ".co.uk": true,
-        ".de": true,
+        ".net": false,
+        ".org": false,
+        ".gov": false,
+        ".edu": false,
+        ".io": false,
+        ".xyz": false,
+        ".info": false,
+        ".biz": false,
+        ".co": false,
+        ".gay": false,
+        ".jp": false,
+        ".co.uk": false,
+        ".de": false,
     },
     CUSTOM: {
         LENGTH: {
@@ -68,13 +90,13 @@ export const SEARCH_PREFS = {
         INSERT: "random", // Can be dynamically set to "prefix" or "suffix"
     },
     LIMITS: {
-        RETRIES: 100,
+        RETRIES: 10,
         TIMEOUT: 1000,
         FALLBACK: {
             TIMEOUT: 5000,
             RETRIES: 0,
         },
-        BATCH: 10,
+        BATCH: 5,
         BATCH_INTERVAL: 1000, // ms time between batches
         MAX_CONCURRENT_REQUESTS: 10
     }

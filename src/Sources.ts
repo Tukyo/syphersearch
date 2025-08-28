@@ -30,7 +30,12 @@ const ResourceEntries: ResourceEntry[] = [
     audio("click_01", "click_01.mp3"),
     audio("click_02", "click_02.mp3"),
     audio("click_03", "click_03.mp3"),
-    audio("click_04", "click_04.mp3")
+    audio("click_04", "click_04.mp3"),
+    audio("result_00", "result_00.mp3"),
+    audio("result_01", "result_01.mp3"),
+    audio("result_02", "result_02.mp3"),
+    audio("result_03", "result_03.mp3"),
+    audio("result_04", "result_04.mp3")
 ];
 // #endregion ▲ Resources ▲
 //

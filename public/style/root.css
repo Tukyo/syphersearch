@@ -5,7 +5,7 @@
     --secondary-color-50: hsla(0, 0%, 7%, 0.50);
     --tertiary-color: hsl(0, 0%, 60%, 1);
     --slate-20: hsla(0, 0%, 25%, 0.2);
-    --slate-dark-10: hsla(0, 0%, 15%, 0.1);
+    --slate-dark-10: rgba(38, 38, 38, 0.1);
 
     --background-color: hsl(0, 0%, 10%, 1);
     --background-color-alt: hsl(0, 0%, 5%, 0.5);
@@ -15,7 +15,7 @@
 
     --font-color: hsl(0, 0%, 90%);
     --font-color-alt: hsl(0, 0%, 60%);
-    --font-color-accent: hsl(0, 0%, 30%);
+    --font-color-accent: rgb(77, 77, 77);
     --font-family: "Noto Sans JP", sans-serif;
     --font-weight-light: 300;
     --font-weight-regular: 400;

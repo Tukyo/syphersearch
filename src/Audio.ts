@@ -1,10 +1,27 @@
+/* 
+════════╗
+| AUDIO
+════════╝
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+> Handles audio playback and mixers.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+*/
+
 import { AUDIO, DEBUG } from "./Config";
 import { Resources } from "./Sources";
 import { randomFloat } from "./Utils";
 
+// #region > Sound Playback <
 let lastPlayedClip: string | null = null;
 const bufferPool: Record<string, HTMLAudioElement[]> = {};
+const DEBOUNCE = 100; // milliseconds
+let lastPlayTime = 0;
+
 export function playSound(category: string): void {
+    const now = Date.now();
+    if (now - lastPlayTime < DEBOUNCE) return;
+    lastPlayTime = now;
+
     const clips = Object.keys(Resources).filter(key => key.startsWith(`${category}_`));
     if (clips.length === 0) return;
 
@@ -38,16 +55,18 @@ export function playSound(category: string): void {
 
     // Play it
     available.play().catch(() => { });
-    if (DEBUG.ENABLED) console.log("▶️ Playing:", selectedKey);
+    if (DEBUG.ENABLED && !DEBUG.QUIET) console.log("▶️ Playing:", selectedKey);
     lastPlayedClip = selectedKey;
 }
-
-
-
+//#endregion ^ Sound Playback ^
+//
+// --ι══════════════ι--
+//
+// #region > Mix <
 function mixerPass(channel: keyof typeof AUDIO.MIXER): number {
     return AUDIO.MIXER[channel] ?? 1;
 }
-
 function masterPass(volume: number): number {
     return volume * AUDIO.MIXER.MASTER;
 }
+//#endregion ^ Mix ^

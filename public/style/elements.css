@@ -5,6 +5,10 @@
     transition: all 0.25s ease;
 }
 
+html {
+    overflow: hidden;
+}
+
 html,
 body {
     max-width: 90%;
@@ -14,13 +18,24 @@ body {
     background-position: center;
     background-repeat: no-repeat;
     background-attachment: fixed;
-    font-size: clamp(14px, 1.25vw, 24px);
+    font-size: clamp(14px, 1.15vw, 24px);
 }
 
 main {
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-direction: column;
+}
+
+view {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 30%;
+    transform: translateX(61.5%);
+    transition: all 1s ease-in-out;
 }
 
 div {
@@ -52,6 +67,14 @@ button:hover {
 /*
 *
 */
+/* #region Tables */
+td {
+    text-align: center;
+}
+/* #endregion Tables */
+/*
+*
+*/
 /* #region Header and Footer */
 header,
 footer {
@@ -59,6 +82,9 @@ footer {
     justify-content: space-between;
     align-items: center;
     padding: 10px 50px;
+}
+footer {
+    position: absolute;
 }
 
 h3 {

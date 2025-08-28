@@ -7,37 +7,26 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 */
 
-import axios, { AxiosError } from 'axios';
-
-import { DEBUG, SEARCH_PREFS } from './Config';
+import { DEBUG, PLUGINS, SEARCH_PREFS, STATE, USER } from './Config';
 import { InterfaceInitEvents, ProgressEvents, ValidResultEvents } from './Events';
 import { initInterface, setText, toggleTab, ui, updatePremium } from './Interface';
 import { logBatchResults, throttle, check } from './Utils';
 import { Dictionary } from './dict/Dictionary';
-import { invalidResults, redirectedResults, sessionResults, timeoutQueue, validResults } from './Cache';
+import { invalidResults, loadIndexedDB, resetAppState, saveSessionResult, sessionResults, timeoutQueue, validResults } from './Cache';
 import { SessionResult } from './Defs';
 import { generateRandomURL } from './Generation';
-
-export const state = {
-  isSearching: false,
-  isProcessingTimeouts: false,
-  isPremium: false
-};
-
-export const plugins = {
-  ethers: (window as any).ethers,
-  sypher: (window as any).sypher
-}
+import { cloudSync, loadGlobalFavorites, loadGlobalSyrchers, login, syncENS } from './Database';
 
 let c = {} as any;
 
 // #region > Initialization <
+// ----> EVENT INIT
 InterfaceInitEvents.on(() => {
   if (DEBUG.ENABLED) {
     console.log("UI created:", ui);
   }
 
-  plugins.sypher.init({
+  PLUGINS.sypher.init({
     interface: {
       button: {
         type: "connect",
@@ -51,26 +40,75 @@ InterfaceInitEvents.on(() => {
       contractAddress: "0x21b9D428EB20FA075A29d51813E57BAb85406620",
       poolAddress: "0xB0fbaa5c7D28B33Ac18D9861D4909396c1B8029b",
       pairAddress: "0x4200000000000000000000000000000000000006",
+      overrides: {
+        decimals: 18,
+        name: "Sypher",
+        symbol: "SYPHER",
+        totalSupply: PLUGINS.ethers.utils.parseUnits("1000000", 18),
+        tokenPrice: 0.086728360992 //TODO: DELETE THIS TESTING ONLY!
+      },
       version: "V3",
       icon: "https://github.com/Tukyo/sypherbot-public/blob/main/assets/img/botpic.png?raw=true"
     }
   });
 });
-
 window.addEventListener('sypher:initCrypto', function (event) {
-  (async () => {
+  (async () => {    
     c = (event as CustomEvent).detail;
     let tb = c.user.tokenBalance;
 
     if (DEBUG.ENABLED) {
-      console.log("Crypto:", c);
+      console.log("Token:", c.token);
     }
 
-    if (check(tb)) { state.isPremium = true;  updatePremium(); }
+    try {
+      // Call login BEFORE mutating USER
+      const dbUser = await login(c.user.address, c.user.ens);
+
+      await new Promise(resolve => setTimeout(resolve, 100)); // Let IndexedDB operations complete
+
+      if (tb != 0 && check(tb)) { STATE.PREMIUM = true; updatePremium(); }
+
+      // Only update USER if login worked
+      USER.address = c.user.address;
+      USER.ens = c.user.ens || undefined;
+      USER.ethBalance = c.user.ethBalance;
+      USER.tokenBalance = c.user.tokenBalance;
+      USER.value = c.user.value;
+
+      if (DEBUG.ENABLED) {
+        console.log("User:", USER);
+      }
+
+      await cloudSync(dbUser, c.user.address);
+    } catch (err) {
+      console.error("Login failed, USER not updated:", err);
+    }
   })();
 });
-
-initInterface();
+window.addEventListener("sypher:ens", (event) => {
+    const ens = (event as CustomEvent).detail;
+    USER.ens = ens;
+    syncENS(ens);
+});
+window.addEventListener("sypher:disconnect", (event) => {
+  resetAppState();
+});
+window.addEventListener("sypher:accountChange", (event) => {
+  console.log("ACCOUNT CHANGE!!!!!!!!!!!!!!!!!!!!!!!!!");
+  resetAppState();
+});
+// ----
+//
+// ----> CORE INIT
+async function init() {
+  initInterface();
+  await loadIndexedDB();
+  loadGlobalFavorites();
+  loadGlobalSyrchers();
+}
+await init();
+// ----
 // #endregion ^ Initialization ^
 //
 // --ι══════════════ι--
@@ -79,8 +117,8 @@ initInterface();
 //
 // ━━━━┛ ▼ ┗━━━━
 export async function search(): Promise<void> {
-  if (state.isSearching) return;
-  state.isSearching = true;
+  if (STATE.SEARCHING) return;
+  STATE.SEARCHING = true;
   setText("searchButton", "Cancel");
 
   clearQueue();
@@ -102,7 +140,7 @@ export async function search(): Promise<void> {
 
       const batchPromise = new Promise<void>(resolve => {
         setTimeout(async () => {
-          if (!state.isSearching) {
+          if (!STATE.SEARCHING) {
             resolve();
             return;
           }
@@ -136,7 +174,7 @@ export async function search(): Promise<void> {
             const results = await Promise.all(batch.map(b => b.promise));
 
             // 🛑 Check again AFTER batch completes
-            if (!state.isSearching) {
+            if (!STATE.SEARCHING) {
               resolve();
               return;
             }
@@ -165,7 +203,7 @@ export async function search(): Promise<void> {
               }
 
               if (SEARCH_PREFS.CUSTOM.STOP_ON_FIRST) {
-                state.isSearching = false;
+                STATE.SEARCHING = false;
               }
             }
           } catch (error) {
@@ -182,15 +220,40 @@ export async function search(): Promise<void> {
     }
 
     await Promise.all(batchPromises);
-
-    if (DEBUG.ENABLED && state.isSearching) {
-      console.warn("No working URLs found after maximum retries.");
-    }
   } finally {
     ProgressEvents.emit(1);
-    state.isSearching = false;
+    STATE.SEARCHING = false;
     setText("searchButton", "Search");
   }
+}
+async function fetchWithTimeout(url: string, timeout: number, mode: RequestMode): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      method: 'HEAD',
+      redirect: 'follow',
+      mode: mode,
+      signal: controller.signal
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+export function cancelSearch(): void {
+  if (DEBUG.ENABLED) console.log("🛑 Cancelling search process");
+
+  clearQueue();
+  STATE.SEARCHING = false;
+  setText("searchButton", "Search");
+}
+export function clearQueue(): void {
+  if (DEBUG.ENABLED) console.log("Clearing timeout queue");
+
+  timeoutQueue.clear();
+  STATE.PROCESSING_TIMEOUTS = false;
 }
 // ━━━━┛ ▲ ┗━━━━
 //
@@ -223,31 +286,26 @@ async function checkUrl(url: string): Promise<boolean> {
   }
 
   try {
-    const response = await axios.head(url, {
-      timeout: SEARCH_PREFS.LIMITS.TIMEOUT,
-      maxRedirects: 5,
-      validateStatus: () => true,
-    });
-
-    const originalRoot = getRoot(url);
-    const finalRoot = getRoot(response.request?.responseURL || url);
-    const redirected = originalRoot !== finalRoot;
+    const response = await fetchWithTimeout(url, SEARCH_PREFS.LIMITS.TIMEOUT, 'cors');
 
     const result: SessionResult = {
       url,
-      valid: !redirected && response.status < 400,
+      valid: response.status < 400,
       status: response.status,
-      redirectedTo: redirected ? finalRoot : undefined,
-      checkedAt: Date.now(),
+      timeStamp: Date.now(),
     };
 
     sessionResults.set(url, result);
+    saveSessionResult({
+      url,
+      valid: result.valid,
+      timestamp: result.timeStamp
+    });
+
 
     if (result.valid) {
       validResults.set(url, result);
       ValidResultEvents.emit(url);
-    } else if (redirected) {
-      redirectedResults.set(url, result);
     } else {
       invalidResults.set(url, result);
     }
@@ -257,29 +315,35 @@ async function checkUrl(url: string): Promise<boolean> {
     const result: SessionResult = {
       url,
       valid: false,
-      checkedAt: Date.now(),
-      reason: (error as AxiosError)?.message || "unknown error",
+      timeStamp: Date.now(),
+      reason: (error as Error)?.message || "unknown error",
     };
 
     sessionResults.set(url, result);
     invalidResults.set(url, result);
+    saveSessionResult({
+      url,
+      valid: result.valid,
+      timestamp: result.timeStamp
+    });
 
-    const errMsg = (error as AxiosError)?.message || "";
-    const isTimeout = errMsg.toLowerCase().includes("timeout") || (error as AxiosError)?.code === "ECONNABORTED";
+    const errMsg = (error as Error)?.message || "";
+    const isTimeout = errMsg.toLowerCase().includes("timeout") || errMsg.toLowerCase().includes("aborted") || (error as any)?.name === "AbortError";
+    const retriesEnabled = SEARCH_PREFS.LIMITS.FALLBACK.RETRIES > 0;
 
-    if (isTimeout) {
+    if (isTimeout && retriesEnabled) {
       timeoutQueue.add(url);
       processTimeoutQueue();
     }
 
-    const fallbackSuccess = await fallback(error, url);
+    const fallbackSuccess = await fallback(url);
 
     // If fallback succeeded, update the cached result
     if (fallbackSuccess) {
       const updatedResult: SessionResult = {
         url,
         valid: true,
-        checkedAt: Date.now(),
+        timeStamp: Date.now(),
         reason: "recovered via fallback"
       };
 
@@ -287,23 +351,16 @@ async function checkUrl(url: string): Promise<boolean> {
       validResults.set(url, updatedResult);
       ValidResultEvents.emit(url);
       invalidResults.delete(url);
+
+      saveSessionResult({
+        url,
+        valid: true,
+        timestamp: updatedResult.timeStamp
+      });
     }
 
     return fallbackSuccess;
   }
-}
-export function cancelSearch(): void {
-  if (DEBUG.ENABLED) console.log("🛑 Cancelling search process");
-
-  clearQueue();
-  state.isSearching = false;
-  setText("searchButton", "Search");
-}
-export function clearQueue(): void {
-  if (DEBUG.ENABLED) console.log("Clearing timeout queue");
-
-  timeoutQueue.clear();
-  state.isProcessingTimeouts = false;
 }
 // ━━━━┛ ▲ ┗━━━━
 //
@@ -311,92 +368,35 @@ export function clearQueue(): void {
 //
 // --ι══════════════ι--
 //
-// #region > Fallbacks <
+// #region > Fallback <
 //
 // ━━━━┛ ▼ ┗━━━━
-async function fallback(error: unknown, url: string): Promise<boolean> {
-  const err = error as AxiosError;
-  const message = (err?.message || "").toLowerCase();
-  const code = err?.code || "";
-
-  // CORS error or failure on 200
-  if (message.includes("cors") || message.includes("err_failed")) {
-    return await corsImageCheck(url);
+async function fallback(url: string): Promise<boolean> {
+  if (DEBUG.ENABLED && !DEBUG.QUIET) {
+    console.log("🔄 Attempting fallback for:", url);
   }
 
-  // DNS resolution failure
-  if (message.includes("name_not_resolved")) {
-    return false; // skip completely, domain doesn't exist
-  }
-
-  // SSL certificate problems
-  if (
-    message.includes("ssl") ||
-    message.includes("cert") ||
-    message.includes("cipher") ||
-    message.includes("protocol")
-  ) {
-    return false;
-  }
-
-  // Redirects to 405, 302, etc. that might block HEAD
-  if (
-    message.includes("405") ||
-    message.includes("redirect") ||
-    message.includes("302") ||
-    message.includes("301")
-  ) {
-    return await tryGetInstead(url);
-  }
-
-  // Timeout case
-  if (code === "ECONNABORTED" || message.includes("timeout")) {
-    return await retryWithLongerTimeout(url);
-  }
-
-  return false; // Default fallback
-}
-async function corsImageCheck(url: string): Promise<boolean> {
-  return new Promise(resolve => {
-    const img = new Image();
-    const timeout = setTimeout(() => resolve(false), 3000);
-    img.onload = () => { clearTimeout(timeout); resolve(true); };
-    img.onerror = () => { clearTimeout(timeout); resolve(false); };
-    img.src = url;
-  });
-}
-async function tryGetInstead(url: string): Promise<boolean> {
   try {
-    const res = await fetch(url, {
+    await fetch(url, {
       method: "GET",
-      mode: "no-cors",
-    });
-    // no way to inspect response due to no-cors, so fallback to image
-    return await corsImageCheck(url);
-  } catch {
-    return false;
-  }
-}
-async function retryWithLongerTimeout(url: string): Promise<boolean> {
-  try {
-    const response = await axios.head(url, {
-      timeout: 3000,
-      maxRedirects: 2,
-      validateStatus: () => true,
+      mode: "no-cors", // Attempt without cors
+      redirect: "follow"
     });
 
-    if (response.status < 400) {
-      if (DEBUG.ENABLED) console.log(`⏱️ Recovered after timeout: ${url}`);
-      return true;
+    if (DEBUG.ENABLED && !DEBUG.QUIET) {
+      console.log("✅ CORS bypass succeeded for:", url);
     }
-    return false;
-  } catch {
+    return true;
+  } catch (error) {
+    if (DEBUG.ENABLED && !DEBUG.QUIET) {
+      console.log("❌ CORS bypass failed for:", url, error);
+    }
     return false;
   }
 }
 async function processTimeoutQueue(): Promise<void> {
-  if (state.isProcessingTimeouts) return;
-  state.isProcessingTimeouts = true;
+  if (STATE.PROCESSING_TIMEOUTS) return;
+  STATE.PROCESSING_TIMEOUTS = true;
 
   const fallbackLimits = SEARCH_PREFS.LIMITS.FALLBACK;
 
@@ -408,27 +408,28 @@ async function processTimeoutQueue(): Promise<void> {
 
     for (let attempt = 1; attempt <= fallbackLimits.RETRIES; attempt++) {
       try {
-        const response = await axios.head(url, {
-          timeout: fallbackLimits.TIMEOUT,
-          maxRedirects: 2,
-          validateStatus: () => true
-        });
+        const response = await fetchWithTimeout(url, fallbackLimits.TIMEOUT, 'cors');
 
         const valid = response.status < 400;
-        const redirected = getRoot(url) !== getRoot(response.request?.responseURL || url);
+        const redirected = getRoot(url) !== getRoot(response.url);
 
         if (valid && !redirected) {
           const result: SessionResult = {
             url,
             valid: true,
             status: response.status,
-            checkedAt: Date.now(),
+            timeStamp: Date.now(),
             reason: "recovered via background retry"
           };
 
           sessionResults.set(url, result);
           validResults.set(url, result);
           ValidResultEvents.emit(url);
+          saveSessionResult({
+            url,
+            valid: result.valid,
+            timestamp: result.timeStamp
+          });
           success = true;
           break;
         }
@@ -447,11 +448,11 @@ async function processTimeoutQueue(): Promise<void> {
   }
 
   if (DEBUG.ENABLED) console.log("✅ Timeout queue cleared.");
-  state.isProcessingTimeouts = false;
+  STATE.PROCESSING_TIMEOUTS = false;
 }
 // ━━━━┛ ▲ ┗━━━━
 //
-// #endregion ^ Fallbacks ^
+// #endregion ^ Fallback ^
 //
 // --ι══════════════ι--
 //

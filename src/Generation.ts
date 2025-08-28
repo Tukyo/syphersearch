@@ -8,7 +8,7 @@
 */
 
 import { sessionResults } from "./Cache";
-import { SEARCH_PREFS, RANDOM_MODE, DEBUG, CHARACTERS } from "./Config";
+import { SEARCH_PREFS, RANDOM_MODE, DEBUG, CHARACTERS, STATE } from "./Config";
 import { dict } from "./dict/Dictionary";
 import { SYLLABLES, CLUSTERS, PATTERNS } from "./GenerationConfig";
 import { ui } from "./Interface";
@@ -18,7 +18,6 @@ import { randomInt, randomString } from "./Utils";
 // #region > Custom Word <
 //
 // ━━━━┛ ▼ ┗━━━━
-let customWord: string | null = null;
 function getCustomWord(): string | null {
   const input = ui.customInput as HTMLInputElement;
   const word = input?.value.trim();
@@ -27,7 +26,6 @@ function getCustomWord(): string | null {
     console.log(`Getting custom word: ${word}`);
   }
 
-  customWord = word || null;
   return word ? word.toLowerCase() : null;
 }
 // ━━━━┛ ▲ ┗━━━━
@@ -122,23 +120,21 @@ export function generateRandomURL(domain: string): string {
     randPart = joined;
   }
 
-  // insert custom word if applicable
-  if (!customWord) customWord = getCustomWord();
-  if (customWord) {
-    switch (SEARCH_PREFS.CUSTOM.INSERT) {
-      case "prefix":
-        randPart = customWord + randPart;
-        break;
-      case "suffix":
-        randPart = randPart + customWord;
-        break;
-      default:
-        randPart = insertWordRandomly(randPart, customWord);
+  let customWord: string | null = null;
+  if (STATE.PREMIUM) {
+    customWord = getCustomWord(); // Check for custom word
+    if (customWord) {
+      switch (SEARCH_PREFS.CUSTOM.INSERT) {
+        case "prefix":
+          randPart = customWord + randPart;
+          break;
+        case "suffix":
+          randPart = randPart + customWord;
+          break;
+        default:
+          randPart = insertWordRandomly(randPart, customWord);
+      }
     }
-
-    // if (DEBUG.ENABLED) {
-    //   console.log(`Inserted optional word: ${customWord} into ${randPart}`);
-    // }
   }
 
   let finalUrl = `${SEARCH_PREFS.BASE}${randPart}${domain}`;
@@ -150,7 +146,7 @@ export function generateRandomURL(domain: string): string {
       ? randomString(SEARCH_PREFS.CUSTOM.CHARACTERS, randomInt(SEARCH_PREFS.CUSTOM.LENGTH.MIN, SEARCH_PREFS.CUSTOM.LENGTH.MAX))
       : generateSyllables(randomInt(SEARCH_PREFS.CUSTOM.LENGTH.MIN, SEARCH_PREFS.CUSTOM.LENGTH.MAX));
 
-    if (customWord) {
+    if (STATE.PREMIUM && customWord) {
       switch (SEARCH_PREFS.CUSTOM.INSERT) {
         case "prefix":
           randPart = customWord + randPart;

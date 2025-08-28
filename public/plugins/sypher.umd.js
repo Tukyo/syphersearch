@@ -25,6 +25,9 @@
             catch (error) {
                 throw new Error(`CryptoModule.validateChain: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
             }
+        },
+        limit: async (ms) => {
+            return new Promise(resolve => setTimeout(resolve, ms));
         }
     };
     const LogModule = {
@@ -371,7 +374,6 @@
     ];
     const MAINNET_RPCS = [
         "https://eth.llamarpc.com",
-        "https://rpc.ankr.com/eth",
         "https://ethereum-rpc.publicnode.com",
         "https://1rpc.io/eth",
         "https://rpc.mevblocker.io"
@@ -442,7 +444,7 @@
                                             type: "img",
                                             classes: ["av-b-td-i"],
                                             attributes: {
-                                                src: params.token.icon
+                                                src: params.token.icon,
                                             }
                                         },
                                         {
@@ -450,7 +452,7 @@
                                             classes: ["av-b-td-n"],
                                             innerHTML: params.token.showTokenDetails
                                                 ? `$${sypher.truncateBalance(parseFloat(params.token.tokenPrice.toString()), params.token.tokenDecimals)}`
-                                                : ""
+                                                : "$0.00."
                                         }
                                     ],
                                     attributes: {
@@ -735,6 +737,9 @@
                 window.addEventListener('sypher:ens', (e) => {
                     const ens = e.detail;
                     button.textContent = ens;
+                });
+                window.addEventListener('sypher:disconnect', (e) => {
+                    button.textContent = text;
                 });
                 const finalOnClick = onClick === defaultParams.onClick
                     ? () => sypher.connect(initCrypto.chain !== "none" ? initCrypto.chain : "ethereum")
@@ -1166,7 +1171,9 @@
                                 pairAddress: initCrypto.pairAddress,
                                 version: initCrypto.version,
                                 detail: providerDetail,
-                                icon: initCrypto.icon
+                                icon: initCrypto.icon,
+                                overrides: initCrypto.overrides,
+                                pair: initCrypto.pair
                             });
                         }
                         else {
@@ -1226,7 +1233,8 @@
                     return null;
                 }
                 sypher.log("Getting details for:", params);
-                const tokenDetails = await this.getTokenDetails(params.chain, params.contractAddress);
+                await HelperModule.limit(100);
+                const tokenDetails = await this.getTokenDetails(params.chain, params.contractAddress, params.overrides);
                 if (!tokenDetails) {
                     return null;
                 }
@@ -1234,24 +1242,35 @@
                 let tokenPrice;
                 let v2Detail = undefined;
                 let v3Detail = undefined;
-                if (params.version === "V2") {
-                    const v2Result = await this.getPriceV2(params.chain, params.poolAddress, params.pair, params.pairAddress);
-                    if (!v2Result) {
-                        return null;
-                    }
-                    tokenPrice = v2Result.price;
-                    v2Detail = v2Result.details;
+                if (params.overrides?.tokenPrice) {
+                    this._tokenPrice = params.overrides.tokenPrice;
                 }
-                else if (params.version === "V3") {
-                    const v3Result = await this.getPriceV3(params.chain, params.contractAddress, params.poolAddress, params.pair, params.pairAddress);
-                    if (!v3Result) {
-                        return null;
-                    }
-                    tokenPrice = v3Result.price;
-                    v3Detail = v3Result.details;
+                if (this._tokenPrice !== undefined) {
+                    tokenPrice = this._tokenPrice;
                 }
                 else {
-                    return null;
+                    if (params.version === "V2") {
+                        await HelperModule.limit(1000);
+                        const v2Result = await this.getPriceV2(params.chain, params.poolAddress, params.pair, params.pairAddress);
+                        if (!v2Result) {
+                            return null;
+                        }
+                        tokenPrice = v2Result.price;
+                        v2Detail = v2Result.details;
+                    }
+                    else if (params.version === "V3") {
+                        await HelperModule.limit(1000);
+                        const v3Result = await this.getPriceV3(params.chain, params.contractAddress, params.poolAddress, params.pair, params.pairAddress);
+                        if (!v3Result) {
+                            return null;
+                        }
+                        tokenPrice = v3Result.price;
+                        v3Detail = v3Result.details;
+                    }
+                    else {
+                        return null;
+                    }
+                    this._tokenPrice = tokenPrice;
                 }
                 const userValue = this.getUserValue(balance, tokenPrice);
                 if (userValue === null || userValue === undefined) {
@@ -1302,6 +1321,7 @@
                 return detailsObj;
             }
             catch (error) {
+                this.disconnect();
                 throw new Error(`CryptoModule.initCrypto: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
             }
             finally {
@@ -1358,6 +1378,7 @@
                 try {
                     const provider = details.provider;
                     sypher.log("[EIP-6963]", details.info.name);
+                    await HelperModule.limit(100);
                     const accounts = await provider.request({ method: "eth_requestAccounts" });
                     if (!Array.isArray(accounts) || !accounts.length) {
                         throw new Error("No accounts returned by the chosen provider.");
@@ -1585,6 +1606,7 @@
             }
             const web3 = new ethers.ethers.providers.Web3Provider(provider);
             const signer = web3.getSigner();
+            await HelperModule.limit(100);
             const balance = await signer.getBalance();
             const eth = parseFloat(ethers.ethers.utils.formatEther(balance));
             sypher.log("ETH Balance:", eth);
@@ -1649,6 +1671,7 @@
                 this._chain = chainData;
             }
             try {
+                await HelperModule.limit(100);
                 const currentChainID = await provider.request({ method: 'eth_chainId' });
                 if (currentChainID === targetChainId) {
                     if (this._chain) {
@@ -1798,7 +1821,7 @@
                 throw new Error(`CryptoModule.getPriceFeed: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
             }
         },
-        getTokenDetails: async function (chain, contractAddress) {
+        getTokenDetails: async function (chain, contractAddress, overrides) {
             if (!chain) {
                 throw new Error("CryptoModule.getTokenDetails: Chain is required");
             }
@@ -1827,15 +1850,29 @@
                 const web3 = new ethers.ethers.providers.Web3Provider(provider);
                 const signer = web3.getSigner();
                 const contract = new ethers.ethers.Contract(contractAddress, ERC20_ABI, signer);
+                await HelperModule.limit(100);
                 const balance = await contract.balanceOf(account);
-                const decimals = await contract.decimals();
-                const name = await contract.name();
-                const symbol = await contract.symbol();
-                const totalSupply = await contract.totalSupply();
+                if (overrides?.decimals === undefined) {
+                    await HelperModule.limit(100);
+                }
+                const decimals = overrides?.decimals ?? await contract.decimals();
+                if (overrides?.name === undefined) {
+                    await HelperModule.limit(100);
+                }
+                const name = overrides?.name ?? await contract.name();
+                if (overrides?.symbol === undefined) {
+                    await HelperModule.limit(100);
+                }
+                const symbol = overrides?.symbol ?? await contract.symbol();
+                if (overrides?.totalSupply === undefined) {
+                    await HelperModule.limit(100);
+                }
+                const totalSupply = overrides?.totalSupply ?? await contract.totalSupply();
                 sypher.log("Raw Details:", { balance, decimals, name, symbol, totalSupply });
                 return { balance, decimals, name, symbol, totalSupply };
             }
             catch (error) {
+                this.disconnect();
                 throw new Error(`CryptoModule.getTokenDetails: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
             }
         },
@@ -1884,14 +1921,19 @@
                 const web3 = new ethers.ethers.providers.Web3Provider(provider);
                 const signer = web3.getSigner();
                 const uniswapV2 = new ethers.ethers.Contract(poolAddress, UNISWAP_V2_POOL_ABI, signer);
+                await HelperModule.limit(250);
                 const token0 = await uniswapV2.token0();
+                await HelperModule.limit(250);
                 const token1 = await uniswapV2.token1();
+                await HelperModule.limit(250);
                 const reserves = await uniswapV2.getReserves();
                 const reserve0 = reserves._reserve0;
                 const reserve1 = reserves._reserve1;
                 const token0Contract = new ethers.ethers.Contract(token0, ERC20_ABI, signer);
                 const token1Contract = new ethers.ethers.Contract(token1, ERC20_ABI, signer);
+                await HelperModule.limit(250);
                 const decimals0 = await token0Contract.decimals();
+                await HelperModule.limit(250);
                 const decimals1 = await token1Contract.decimals();
                 sypher.log("Reserve 0:", reserve0);
                 sypher.log("Reserve 1:", reserve1);
@@ -1970,6 +2012,7 @@
                     return null;
                 }
                 // 1: Get all pool details
+                await HelperModule.limit(250);
                 const v3Detail = await this.getPoolV3(chain, contractAddress, poolAddress);
                 if (!v3Detail) {
                     return null;
@@ -2001,6 +2044,7 @@
                     throw new Error(`CryptoModule.getPriceV3: Neither token is ${pair}`);
                 }
                 // 4: Fetch the ETH price in USD
+                await HelperModule.limit(250);
                 const chainlinkResult = await this.getPriceFeed(pair);
                 if (!chainlinkResult)
                     return null;
@@ -2010,6 +2054,7 @@
                 return { price: tokenPriceUSD, details: v3Detail };
             }
             catch (error) {
+                this.disconnect();
                 throw new Error(`CryptoModule.getPriceV3: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
             }
         },
@@ -2052,25 +2097,32 @@
                 const web3 = new ethers.ethers.providers.Web3Provider(provider);
                 const signer = web3.getSigner();
                 const pool = new ethers.ethers.Contract(poolAddress, UNISWAP_V3_POOL_ABI, signer);
+                await HelperModule.limit(250);
                 const slot0 = await pool.slot0();
                 const sqrtPriceX96 = slot0.sqrtPriceX96;
                 sypher.log("Sqrt Price X96:", sqrtPriceX96);
+                await HelperModule.limit(250);
                 const token0 = await pool.token0();
+                await HelperModule.limit(250);
                 const token1 = await pool.token1();
                 sypher.log("Token 0:", token0);
                 sypher.log("Token 1:", token1);
                 const token0Contract = new ethers.ethers.Contract(token0, ERC20_ABI, signer);
                 const token1Contract = new ethers.ethers.Contract(token1, ERC20_ABI, signer);
+                await HelperModule.limit(250);
                 const decimals0 = await token0Contract.decimals();
+                await HelperModule.limit(250);
                 const decimals1 = await token1Contract.decimals();
                 sypher.log("Decimals 0:", decimals0);
                 sypher.log("Decimals 1:", decimals1);
+                await HelperModule.limit(250);
                 const liquidity = await pool.liquidity();
                 sypher.log("Liquidity:", liquidity);
                 const poolData = { sqrtPriceX96, token0, token1, decimals0, decimals1, liquidity };
                 return poolData;
             }
             catch (error) {
+                this.disconnect();
                 throw new Error(`CryptoModule.getPoolV3: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
             }
         },

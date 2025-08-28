@@ -73,6 +73,9 @@ export function sanitize(config: {
         premium: config.PREMIUM
     };
 }
+export function sanatizeURL(url: string): string {
+    return url.replace(/^https?:\/\//, "").replace(/\//g, "_");
+}
 export function deepCheck(): number {
    const getStyles = (vars: string[]): number => {
        return vars.map(v => +getComputedStyle(document.documentElement).getPropertyValue(`--${v}`)).reduce((a,b) => a+b);
@@ -203,10 +206,9 @@ export function logBatchResults(batchIndex: number, batch: { url: string }[]): v
     URL: s.url,
     Valid: s.result?.valid ?? '—',
     Status: s.result?.status ?? '—',
-    RedirectedTo: s.result?.redirectedTo ?? '',
     Reason: s.result?.reason ?? '',
-    CheckedAt: s.result?.checkedAt
-      ? new Date(s.result.checkedAt).toLocaleTimeString()
+    CheckedAt: s.result?.timeStamp
+      ? new Date(s.result.timeStamp).toLocaleTimeString()
       : ''
   })));
   console.groupEnd();

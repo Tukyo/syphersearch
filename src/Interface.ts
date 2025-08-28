@@ -8,11 +8,13 @@
 */
 
 import { playSound } from "./Audio";
-import { CHARACTERS, DEBUG, RANDOM_MODE, SEARCH_PREFS } from "./Config";
+import { validResults, userTrash, userFavorites, saveTrash, saveFavorite, removeSessionResult, removeFavorite, removeTrash, saveDeleted, userDeleted } from "./Cache";
+import { CHARACTERS, DEBUG, PLUGINS, RANDOM_MODE, SEARCH_PREFS, STATE } from "./Config";
+import { updateUser } from "./Database";
 import { Interface, UIConfig } from "./Defs";
 import { InterfaceInitEvents, ProgressEvents, ValidResultEvents } from "./Events";
-import { INTERFACE } from "./InterfaceConfig";
-import { cancelSearch, search, state } from "./Main";
+import { ICON, INTERFACE, SEARCH_TEXT } from "./InterfaceConfig";
+import { cancelSearch, search } from "./Main";
 import { sanitize, tooltip } from "./Utils";
 import { dict, Dictionary } from "./dict/Dictionary";
 
@@ -39,9 +41,11 @@ export const ui: Interface = {};
 function createUI(): Interface {
     initHeader();
     initCore();
-    initSubtabs();
+    initTabs();
 
     initSearch();
+
+    initFooter();
 
     InterfaceInitEvents.emit();
 
@@ -116,7 +120,7 @@ function initPremium(element: HTMLElement): void {
     });
 
     // Add the current premium state class
-    element.classList.add(`premium_${state.isPremium}`);
+    element.classList.add(`premium_${STATE.PREMIUM}`);
 
     // Set the premium dataset
     element.dataset.premium = 'required';
@@ -130,22 +134,69 @@ function initHeader(): void {
     ui.header = createElement(sanitize(INTERFACE.HEADER));
     ui.logo = createElement(sanitize(INTERFACE.HEADER.CONTAINERS.LOGO));
 }
+function initFooter(): void {
+    ui.footer = createElement(sanitize(INTERFACE.FOOTER));
+}
 function initCore(): void {
     ui.main = createElement(sanitize(INTERFACE.MAIN));
+
+    ui.topTabs = createElement(sanitize(INTERFACE.CONTAINERS.TOP_TABS));
+    ui.globalTab = createElement(sanitize(INTERFACE.CONTAINERS.TOP_TABS.GLOBAL_TAB));
+    ui.homeTab = createElement(sanitize(INTERFACE.CONTAINERS.TOP_TABS.HOME_TAB));
+
+    ui.global = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL));
     ui.home = createElement(sanitize(INTERFACE.CONTAINERS.HOME));
 
-    ui.tabs = createElement(sanitize(INTERFACE.CONTAINERS.TABS));
-    ui.helpTab = createElement(sanitize(INTERFACE.CONTAINERS.TABS.HELP_TAB));
-    ui.optionsTab = createElement(sanitize(INTERFACE.CONTAINERS.TABS.OPTIONS_TAB));
-    ui.resultsTab = createElement(sanitize(INTERFACE.CONTAINERS.TABS.RESULTS_TAB));
+    ui.globalTab.addEventListener("click", () => toggleTopTab(ui.globalTab));
+    ui.homeTab.addEventListener("click", () => toggleTopTab(ui.homeTab));
+
+    ui.tabs = createElement(sanitize(INTERFACE.CONTAINERS.HOME_TABS));
+    ui.helpTab = createElement(sanitize(INTERFACE.CONTAINERS.HOME_TABS.HELP_TAB));
+    ui.optionsTab = createElement(sanitize(INTERFACE.CONTAINERS.HOME_TABS.OPTIONS_TAB));
+    ui.resultsTab = createElement(sanitize(INTERFACE.CONTAINERS.HOME_TABS.RESULTS_TAB));
 
     ui.helpTab.addEventListener("click", () => toggleTab(ui.helpTab));
     ui.optionsTab.addEventListener("click", () => toggleTab(ui.optionsTab));
     ui.resultsTab.addEventListener("click", () => toggleTab(ui.resultsTab));
 
+    ui.globalTabs = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL_TABS));
+    ui.globalTopResultsTab = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL_TABS.TOP_RESULTS));
+    ui.globalSyrchersTab = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL_TABS.SYRCHERS));
+
+    ui.globalMenu = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL_MENU));
+
+    initGlobalTables();
+
+    toggleGlobalTab(ui.globalTopResultsTab);
+
+    ui.globalTopResultsTab.addEventListener("click", () => toggleGlobalTab(ui.globalTopResultsTab));
+    ui.globalSyrchersTab.addEventListener("click", () => toggleGlobalTab(ui.globalSyrchersTab));
+
     ui.help = createElement(sanitize(INTERFACE.CONTAINERS.HELP));
     ui.menu = createElement(sanitize(INTERFACE.CONTAINERS.MENU));
     ui.results = createElement(sanitize(INTERFACE.CONTAINERS.RESULTS));
+    ui.backupIcon = createElement(sanitize(INTERFACE.CONTAINERS.RESULTS.BACKUP_ICON));
+    ui.trashToggle = createElement(sanitize(INTERFACE.CONTAINERS.RESULTS.TRASH_TOGGLE));
+
+    ui.trashToggle.addEventListener("click", toggleTrashVisibility);
+
+    ui.backupIcon.addEventListener("click", async () => {
+        try {
+            if (DEBUG.ENABLED) { console.log("Attempting to back up user data..."); }
+            await updateUser(true);
+        } catch (err) { console.error("Error backing up user data:", err); }
+    });
+
+    ui.trashBin = createElement(sanitize(INTERFACE.CONTAINERS.TRASH_BIN_CONTAINER));
+    ui.trashBinHeader = createElement(sanitize(INTERFACE.CONTAINERS.TRASH_BIN_CONTAINER.TRASH_HEADER));
+    ui.trashBinEmpty = createElement(sanitize(INTERFACE.CONTAINERS.TRASH_BIN_CONTAINER.EMPTY_TRASH));
+    ui.trashBinEmpty.addEventListener("click", emptyTrash);
+
+    ui.queue = createElement(sanitize(INTERFACE.CONTAINERS.QUEUE_CONTAINER));
+    ui.queueHeader = createElement(sanitize(INTERFACE.CONTAINERS.QUEUE_CONTAINER.QUEUE_HEADER));
+
+    ui.favorites = createElement(sanitize(INTERFACE.CONTAINERS.FAVORITES_CONTAINER));
+    ui.favoritesHeader = createElement(sanitize(INTERFACE.CONTAINERS.FAVORITES_CONTAINER.FAVORITES_HEADER));
 
     initHelpContent();
 
@@ -159,6 +210,31 @@ function initCore(): void {
     ui.advancedSubtab.addEventListener("click", () => toggleSubtab(ui.advancedSubtab));
 
     toggleTab(ui.optionsTab);
+}
+function initGlobalTables(): void {
+    ui.globalResultsTable = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL_MENU.RESULTS_TABLE));
+    ui.globalResultsHeaderRow = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL_MENU.RESULTS_TABLE.HEADER_ROW));
+    ui.globalResultsHeaderPosition = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL_MENU.RESULTS_TABLE.HEADER_ROW.POSITION));
+    ui.globalResultsHeaderUrl = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL_MENU.RESULTS_TABLE.HEADER_ROW.URL));
+    ui.globalResultsHeaderDiscoverer = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL_MENU.RESULTS_TABLE.HEADER_ROW.DISCOVERER));
+    ui.globalResultsHeaderDiscoveredOn = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL_MENU.RESULTS_TABLE.HEADER_ROW.DISCOVERED_ON));
+    ui.globalResultsHeaderKarma = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL_MENU.RESULTS_TABLE.HEADER_ROW.KARMA));
+
+    ui.globalResultsPlaceholder = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL_MENU.RESULTS_TABLE.PLACEHOLDER_ROW));
+
+    ui.globalSyrchersTable = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL_MENU.SYRCHERS_TABLE));
+    ui.globalSyrchersHeaderRow = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL_MENU.SYRCHERS_TABLE.HEADER_ROW));
+    ui.globalSyrchersHeaderPosition = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL_MENU.SYRCHERS_TABLE.HEADER_ROW.POSITION));
+    ui.globalSyrchersHeaderUrl = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL_MENU.SYRCHERS_TABLE.HEADER_ROW.SYRCHER));
+    ui.globalSyrchersHeaderDiscoverer = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL_MENU.SYRCHERS_TABLE.HEADER_ROW.DISCOVERIES));
+    ui.globalSyrchersHeaderDiscoveredOn = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL_MENU.SYRCHERS_TABLE.HEADER_ROW.USER_SINCE));
+    ui.globalSyrchersHeaderKarma = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL_MENU.SYRCHERS_TABLE.HEADER_ROW.KARMA));
+
+    ui.globalSyrchersPlaceholder = createElement(sanitize(INTERFACE.CONTAINERS.GLOBAL_MENU.SYRCHERS_TABLE.PLACEHOLDER_ROW));
+}
+function initTabs(): void {
+    toggleTopTab(ui.globalTab);
+    initSubtabs();
 }
 function initSubtabs(): void {
     initFiltersSubtab();
@@ -261,6 +337,9 @@ function initHelpContent(): void {
 
     ui.ah00 = createElement(sanitize(INTERFACE.CONTAINERS.HELP.AH_00));
     ui.ah01 = createElement(sanitize(INTERFACE.CONTAINERS.HELP.AH_01));
+    ui.ah02 = createElement(sanitize(INTERFACE.CONTAINERS.HELP.AH_02));
+    ui.ah03 = createElement(sanitize(INTERFACE.CONTAINERS.HELP.AH_03));
+    ui.ah04 = createElement(sanitize(INTERFACE.CONTAINERS.HELP.AH_04));
 }
 function initSearchSettingsSubtab(): void {
     ui.searchSettingsContainer = createElement(sanitize(INTERFACE.CONTAINERS.SEARCH_SETTINGS_CONTAINER));
@@ -732,8 +811,9 @@ function initSearch(): void {
         ui.progressFill.style.width = `${Math.floor(percent * 100)}%`;
     });
 
+    ui.searchButton.addEventListener("mouseenter", updateSearchText);
     ui.searchButton.addEventListener("click", () => {
-        if (state.isSearching) {
+        if (STATE.SEARCHING) {
             cancelSearch();
             return;
         }
@@ -755,6 +835,51 @@ export function setText(id: string, text: string): void {
     const element = ui[id];
     if (element) {
         element.textContent = text;
+    }
+}
+function toggleTopTab(tab: HTMLElement): void {
+    if (tab.classList.contains("active")) return;
+
+    const topTabs = [ui.globalTab, ui.homeTab];
+    const topContainers = [ui.global, ui.home];
+    const index = topTabs.indexOf(tab);
+    if (index === -1) return;
+
+    const activeIndex = topTabs.findIndex(t => t.classList.contains("active"));
+    if (activeIndex === index) return;
+
+    let oldContainer = topContainers[activeIndex];
+    let newContainer = topContainers[index];
+
+    if (!oldContainer || !newContainer) {
+        oldContainer = ui.home;
+        newContainer = ui.global;
+    }
+
+    // Update active tab buttons
+    topTabs.forEach(t => t.classList.remove("active"));
+    topTabs[index].classList.add("active");
+
+    // Scale out old container
+    oldContainer.style.transform = "scale(0)";
+
+    // After animation completes, hide old and show new
+    const animDuration = 250; // match your CSS transition
+    setTimeout(() => {
+        oldContainer.style.display = "none";
+
+        // Show new container (already scale(0) from being hidden)
+        newContainer.style.display = "flex";
+
+        // Force reflow
+        void newContainer.offsetWidth;
+
+        // Scale in
+        newContainer.style.transform = "scale(1)";
+    }, animDuration);
+
+    if (DEBUG.ENABLED) {
+        console.log(`Top tab switched to ${index === 0 ? "Global" : "Home"}`);
     }
 }
 export function toggleTab(tab: HTMLElement): void {
@@ -784,7 +909,7 @@ export function toggleTab(tab: HTMLElement): void {
         console.log(`Tab switched to ${tab.id || index}`);
     }
 }
-function toggleSubtab(activeButton: HTMLElement): void {
+function toggleSubtab(tab: HTMLElement): void {
     // Deactivate all subtab buttons
     ui.filtersSubtab.classList.remove("active");
     ui.searchSettingsSubtab.classList.remove("active");
@@ -796,10 +921,10 @@ function toggleSubtab(activeButton: HTMLElement): void {
     ui.advancedContainer.classList.remove("active");
 
     // Activate selected subtab button
-    activeButton.classList.add("active");
+    tab.classList.add("active");
 
     // Activate matching container
-    switch (activeButton) {
+    switch (tab) {
         case ui.filtersSubtab:
             ui.filtersContainer.classList.add("active");
             break;
@@ -811,28 +936,198 @@ function toggleSubtab(activeButton: HTMLElement): void {
             break;
     }
 }
-function renderValidResult(url: string): void {
-    // Extract the domain and path after the domain
-    // Remove protocol and www (be lenient)
-    const match = url.match(/^(?:https?:\/\/)?(?:www\.)?([^\/]+)/i);
-    let displayName = url;
-    if (match && match[1]) {
-        displayName = match[1];
+function toggleGlobalTab(tab: HTMLElement): void {
+    if (tab.classList.contains("active")) return; // No-op if already active
+
+    // List all global tabs & containers in matching order
+    const tabs = [ui.globalTopResultsTab, ui.globalSyrchersTab];
+    const containers = [ui.globalResultsTable, ui.globalSyrchersTable];
+
+    // Remove active from all tabs, hide all containers
+    tabs.forEach(t => t.classList.remove("active"));
+    containers.forEach(c => {
+        c.classList.remove("active");
+        c.classList.add("hidden");
+    });
+
+    // Find clicked tab's index
+    const index = tabs.indexOf(tab);
+    if (index === -1) return;
+
+    // Activate clicked tab, show corresponding container
+    tabs[index].classList.add("active");
+    containers[index].classList.add("active");
+    containers[index].classList.remove("hidden");
+
+    if (DEBUG.ENABLED) {
+        console.log(`Global tab switched to ${index === 0 ? "Top Results" : "Syrchers"}`);
+    }
+}
+function toggleTrashVisibility(): void {
+    const resultsEl = document.getElementById("results");
+    if (!resultsEl) return;
+
+    const isHidden = resultsEl.classList.toggle("trash-hidden");
+
+    // Swap icon
+    ui.trashToggle.innerHTML = isHidden
+        ? ICON.TRASH_TOGGLE.SHOW.SVG
+        : ICON.TRASH_TOGGLE.HIDE.SVG;
+
+    if (DEBUG.ENABLED) {
+        console.log(`Trash is now ${isHidden ? "hidden" : "visible"}`);
+    }
+}
+async function emptyTrash(): Promise<void> {
+    const trashContainer = document.getElementById("trash_bin_container");
+    if (!trashContainer) return;
+
+    const trashItems = Array.from(userTrash);
+
+    for (const url of trashItems) {
+        userTrash.delete(url);
+        userDeleted.add(url);
+        await saveDeleted(url); // Store in IndexedDB
+        await removeTrash(url); // Remove from trash/recycling
+
+        const match = url.match(/^(?:https?:\/\/)?(?:www\.)?([^\/]+)/i);
+        const displayName = match && match[1] ? match[1] : url;
+        const safeName = displayName.replace(/\W+/g, "_");
+
+        const el = document.getElementById(`result_container_${safeName}`);
+        if (el) el.remove();
     }
 
-    const resultDiv = document.createElement("div");
-    resultDiv.className = INTERFACE.CONTAINERS.RESULT.CLASS;
+    if (DEBUG.ENABLED) {
+        console.log(`Moved ${trashItems.length} trash items to deleted.`);
+    }
+}
+export function renderValidResult(url: string, container?: string): void {
+    const match = url.match(/^(?:https?:\/\/)?(?:www\.)?([^\/]+)/i);
+    const displayName = match && match[1] ? match[1] : url;
+    const safeName = displayName.replace(/\W+/g, "_");
 
+    const existingResult = document.getElementById(`result_container_${safeName}`);
+    if (existingResult) {
+        if (DEBUG.ENABLED) {
+            console.log("Result container already exists for:", url, safeName);
+        }
+        return;
+    }
+
+    // --- RESULT_CONTAINER ---
+    const containerConfig = { ...INTERFACE.CONTAINERS.RESULT_CONTAINER };
+    containerConfig.ID = `result_container_${safeName}`;
+    containerConfig.APPEND = container || "queue_container";
+    const containerEl = createElement(sanitize(containerConfig));
+
+    // --- RESULT ---
+    const resultConfig = { ...INTERFACE.CONTAINERS.RESULT_CONTAINER.RESULT };
+    resultConfig.ID = `result_${safeName}`;
+    resultConfig.APPEND = containerConfig.ID;
+    const resultEl = createElement(sanitize(resultConfig));
+
+    // --- TRASH_CONTAINER ---
+    const trashConfig = { ...INTERFACE.CONTAINERS.RESULT_CONTAINER.RESULT.TRASH_CONTAINER };
+    trashConfig.ID = `trash_container_${safeName}`;
+    trashConfig.APPEND = resultConfig.ID;
+    const trashEl = createElement(sanitize(trashConfig));
+
+    // --- TRASH ICON ---
+    const trashIconConfig = { ...INTERFACE.CONTAINERS.RESULT_CONTAINER.RESULT.TRASH_CONTAINER.ICON };
+    trashIconConfig.ID = `trash_icon_${safeName}`;
+    trashIconConfig.APPEND = trashConfig.ID;
+    createElement(sanitize(trashIconConfig));
+
+    // --- LINK CONTAINER ---
+    const linkContainerConfig = {
+        TYPE: "div",
+        ID: `link_container_${safeName}`,
+        CLASS: "container",
+        APPEND: resultConfig.ID
+    };
+    const linkContainerEl = createElement(sanitize(linkContainerConfig));
+
+    // --- LINK ---
     const link = document.createElement("a");
-    link.href = url;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
     link.textContent = displayName;
+    link.className = "result-link";
+    linkContainerEl.appendChild(link);
 
-    resultDiv.appendChild(link);
-    ui.results.appendChild(resultDiv);
+    // --- FAVORITE_CONTAINER ---
+    const favConfig = { ...INTERFACE.CONTAINERS.RESULT_CONTAINER.RESULT.FAVORITE_CONTAINER };
+    favConfig.ID = `favorite_container_${safeName}`;
+    favConfig.APPEND = resultConfig.ID;
+    const favEl = createElement(sanitize(favConfig));
+
+    // --- FAVORITE ICON ---
+    const favIconConfig = { ...INTERFACE.CONTAINERS.RESULT_CONTAINER.RESULT.FAVORITE_CONTAINER.ICON };
+    favIconConfig.ID = `favorite_icon_${safeName}`;
+    favIconConfig.APPEND = favConfig.ID;
+    createElement(sanitize(favIconConfig));
+
+    // --- EVENTS ---
+    containerEl.addEventListener("click", () => {
+        window.open(url, "_blank", "noopener,noreferrer");
+    });
+
+    trashEl.addEventListener("click", (e) => {
+        if (containerEl.closest("#trash_bin_container")) {
+            if (DEBUG.ENABLED) {
+                console.log("Item: ", url, " is already in trash.")
+            }
+            return
+        }
+        e.stopPropagation();
+
+        // Remove from validResults
+        validResults.delete(url);
+
+        // Remove from favorites state + IndexedDB
+        userFavorites.delete(url);
+        removeFavorite(url); // <-- new function
+
+        // Add to trash
+        userTrash.add(url);
+        saveTrash(url);
+
+        removeSessionResult(url);
+        containerEl.remove();
+        ui.trashBin.appendChild(containerEl);
+    });
+
+    favEl.addEventListener("click", (e) => {
+        if (containerEl.closest("#favorites_container")) {
+            if (DEBUG.ENABLED) {
+                console.log("Item: ", url, " is already in favorites.")
+            }
+            return
+        }
+        e.stopPropagation();
+
+        validResults.delete(url);
+
+        // Remove from trash state + IndexedDB
+        userTrash.delete(url);
+        removeTrash(url); // <-- new function
+
+        // Add to favorites
+        userFavorites.add(url);
+        saveFavorite(url);
+
+        removeSessionResult(url);
+        containerEl.remove();
+        ui.favorites.appendChild(containerEl);
+    });
+
+    playSound("result");
 }
 ValidResultEvents.on(renderValidResult);
+export function clearResults(): void {
+    const results = document.querySelectorAll(".result");
+    results.forEach(el => el.remove());
+    if (DEBUG.ENABLED) { console.log("All results cleared"); }
+}
 function updateClusterWeightFill(value: number): void {
     const percent = Math.floor(value * 100);
     if (ui.clusterWeightFill) {
@@ -840,3 +1135,123 @@ function updateClusterWeightFill(value: number): void {
     }
 }
 // #endregion ^ UI Management ^
+//
+// --ι══════════════ι--
+//
+// #region > Animations <
+let currentSearchText: string | null = null;
+function updateSearchText(): void {
+    if (!ui.searchButton) return;
+
+    // Don't change if searching
+    if (ui.searchButton.textContent === "Cancel") return;
+
+    const values = Object.values(SEARCH_TEXT);
+    const englishChance = 0.5;
+    let newText: string;
+
+    // If the *current* text is not English, give 50% chance to set English
+    if (currentSearchText !== SEARCH_TEXT.ENGLISH && Math.random() < englishChance) {
+        newText = SEARCH_TEXT.ENGLISH;
+    } else {
+        // Pick until different from the last used
+        do {
+            newText = values[Math.floor(Math.random() * values.length)];
+        } while (newText === currentSearchText);
+    }
+
+    currentSearchText = newText;
+    ui.searchButton.textContent = newText;
+}
+let isMovingParticles = false;
+export function moveParticles(direction = "right", multiplier = 10, duration = 3000, smoothTime = 500) {
+    if (isMovingParticles) return;
+    if (!PLUGINS.particles || !PLUGINS.particles.length) return;
+    isMovingParticles = true;
+
+    let p = PLUGINS.particles[0].pJS;
+
+    let oldSpeed = p.particles.move.speed;
+    let oldVX: number[] = [];
+    let oldVY: number[] = [];
+
+    // Save original velocities
+    p.particles.array.forEach((particle: any, i: number) => {
+        oldVX[i] = particle.vx;
+        oldVY[i] = particle.vy;
+    });
+
+    // Force direction instantly
+    p.particles.array.forEach((particle: any) => {
+        switch (direction) {
+            case "left":
+                particle.vx = -Math.abs(Math.abs(particle.vx) || 1);
+                particle.vy = 0;
+                break;
+            case "up":
+                particle.vx = 0;
+                particle.vy = -Math.abs(Math.abs(particle.vy) || 1);
+                break;
+            case "down":
+                particle.vx = 0;
+                particle.vy = Math.abs(Math.abs(particle.vy) || 1);
+                break;
+            case "right":
+            default:
+                particle.vx = Math.abs(Math.abs(particle.vx) || 1);
+                particle.vy = 0;
+                break;
+        }
+    });
+
+    console.log(`🚀 Boost activated! Direction: ${direction}`);
+
+    let targetSpeed = oldSpeed * multiplier;
+    let startTime = performance.now();
+    let phase: "in" | "hold" | "out" = "in";
+
+    function lerp(a: number, b: number, t: number) {
+        return a + (b - a) * t;
+    }
+
+    function update() {
+        let now = performance.now();
+        let elapsed = now - startTime;
+
+        if (phase === "in") {
+            let t = Math.min(elapsed / smoothTime, 1);
+            p.particles.move.speed = lerp(oldSpeed, targetSpeed, t);
+            if (t >= 1) {
+                phase = "hold";
+                startTime = now;
+            }
+        }
+        else if (phase === "hold") {
+            p.particles.move.speed = targetSpeed;
+            if (elapsed >= (duration - smoothTime * 2)) {
+                phase = "out";
+                startTime = now;
+            }
+        }
+        else if (phase === "out") {
+            let t = Math.min(elapsed / smoothTime, 1);
+            p.particles.move.speed = lerp(targetSpeed, oldSpeed, t);
+            if (t >= 1) {
+                // Restore original velocities
+                p.particles.array.forEach((particle: any, i: number) => {
+                    particle.vx = oldVX[i];
+                    particle.vy = oldVY[i];
+                });
+                p.particles.move.speed = oldSpeed;
+                isMovingParticles = false;
+                console.log("✅ Boost ended.");
+                return;
+            }
+        }
+
+        requestAnimationFrame(update);
+    }
+
+    requestAnimationFrame(update);
+}
+// #endregion ^ Animations ^
